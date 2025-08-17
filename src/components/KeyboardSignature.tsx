@@ -315,6 +315,18 @@ export const KeyboardSignature = () => {
                   </button>
                 ))}
               </div>
+
+              {/* Clear Button */}
+              <div className="col-span-2 mt-4">
+                <button
+                  onClick={() => {
+                    setName("");
+                  }}
+                  className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-all duration-150 ease-out cursor-pointer active:scale-98"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
           </motion.div>
         ) : (
