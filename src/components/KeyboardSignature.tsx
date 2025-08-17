@@ -1,13 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { keyboardLayouts, KeyboardLayout } from "@/util/constants";
+import {
+  keyboardLayouts,
+  KeyboardLayout,
+  CurveType,
+  generatePath,
+} from "@/util/constants";
+import { AnimatePresence, motion } from "motion/react";
 
 export const KeyboardSignature = () => {
   const [name, setName] = useState("");
   const [currentKeyboardLayout, setCurrentKeyboardLayout] =
     useState<KeyboardLayout>(KeyboardLayout.QWERTY);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [curveType, setCurveType] = useState<CurveType>("linear");
+  const [optionsOpen, setOptionsOpen] = useState(true);
 
-  // focus on input when user types
+  // Focus on input when user types
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -56,13 +64,8 @@ export const KeyboardSignature = () => {
     if (points.length === 0) return "";
 
     // SVG path
-    let path = `M ${points[0].x} ${points[0].y}`;
-    for (let i = 1; i < points.length; i++) {
-      path += ` L ${points[i].x} ${points[i].y}`;
-    }
-
-    return path;
-  }, [name, currentKeyboardLayout]);
+    return generatePath(points, curveType);
+  }, [name, currentKeyboardLayout, curveType]);
 
   // Get active keys for highlighting
   const activeKeys = useMemo(() => {
@@ -131,29 +134,6 @@ export const KeyboardSignature = () => {
     <div
       className={`flex flex-col sm:items-center sm:justify-center max-sm:mx-auto max-sm:w-[28rem] sm:w-fit`}
     >
-      <div className="max-sm:mx-auto max-sm:mb-10 sm:absolute sm:left-1/2 sm:-translate-x-1/2 sm:bottom-8 flex flex-row items-center opacity-50 hover:opacity-100 transition-all duration-200 ease-out">
-        <label
-          htmlFor="keyboard-layout"
-          className="text-white text-sm font-medium"
-        >
-          Layout:
-        </label>
-        <select
-          id="keyboard-layout"
-          className="border border-neutral-800 rounded-md ml-2 px-2 py-1 bg-neutral-900 text-white text-sm"
-          value={currentKeyboardLayout}
-          onChange={(e) => {
-            setCurrentKeyboardLayout(e.target.value as KeyboardLayout);
-          }}
-        >
-          {Object.values(KeyboardLayout).map((layout) => (
-            <option key={layout} value={layout} className="text-neutral-500">
-              {layout}
-            </option>
-          ))}
-        </select>
-      </div>
-
       <input
         autoFocus
         ref={inputRef}
@@ -259,6 +239,100 @@ export const KeyboardSignature = () => {
           View on GitHub
         </a>
       </div>
+
+      <AnimatePresence>
+        {optionsOpen ? (
+          <motion.div
+            initial={{ y: 4, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 4, opacity: 0 }}
+            transition={{
+              duration: 0.4,
+              ease: [0.6, 1, 0.26, 1],
+            }}
+            className="flex flex-col items-start max-sm:-translate-x-1/2 max-sm:left-1/2 max-sm:w-[calc(100%-3rem)] sm:max-w-xs absolute sm:right-6 bottom-6 p-4 rounded-xl bg-neutral-950 border-neutral-800/50 border z-10"
+          >
+            <button
+              onClick={() => setOptionsOpen(false)}
+              className="text-sm text-neutral-600 hover:text-neutral-400 absolute right-4 top-4 cursor-pointer"
+            >
+              Close
+            </button>
+
+            <p className="font-semibold text-neutral-400 mb-4">Options</p>
+
+            <div className="grid grid-cols-[5rem_1fr] gap-y-4">
+              {/* Layout */}
+              <label
+                htmlFor="keyboard-layout"
+                className="text-neutral-300 text-sm font-medium mr-8 mt-1"
+              >
+                Layout
+              </label>
+              <select
+                id="keyboard-layout"
+                className="border border-neutral-800 rounded-md px-2 py-1 bg-neutral-900 text-white text-sm"
+                value={currentKeyboardLayout}
+                onChange={(e) => {
+                  setCurrentKeyboardLayout(e.target.value as KeyboardLayout);
+                }}
+              >
+                {Object.values(KeyboardLayout).map((layout) => (
+                  <option
+                    key={layout}
+                    value={layout}
+                    className="text-neutral-500"
+                  >
+                    {layout}
+                  </option>
+                ))}
+              </select>
+
+              {/* Curve */}
+              <p className="text-neutral-300 text-sm font-medium mr-8 mt-1">
+                Curve
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {(
+                  [
+                    "linear",
+                    "simple-curve",
+                    "quadratic-bezier",
+                    "cubic-bezier",
+                    "catmull-rom",
+                  ] as CurveType[]
+                ).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setCurveType(type)}
+                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${
+                      curveType === type
+                        ? "bg-white text-black font-medium border-white"
+                        : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
+                    }`}
+                  >
+                    {type.replace("-", " ")}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.button
+            onClick={() => setOptionsOpen(true)}
+            className="absolute bottom-6 right-6 px-4 py-2 rounded-lg bg-neutral-950 border-neutral-800/50 border cursor-pointer text-sm font-medium text-neutral-200"
+            initial={{ y: -4, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -4, opacity: 0 }}
+            transition={{
+              duration: 0.4,
+              ease: [0.6, 1, 0.26, 1],
+            }}
+          >
+            Options
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
