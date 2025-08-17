@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 
 type KeyboardLayout = "qwerty";
 type Key = {
@@ -45,6 +45,27 @@ export const KeyboardSignature = () => {
   const [currentKeyboardLayout, _setCurrentKeyboardLayout] =
     useState<KeyboardLayout>("qwerty");
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+    // focus on input when user types
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const isInputFocused = document.activeElement === inputRef.current;
+
+            if (!isInputFocused) {
+                if (/^[a-zA-Z]$/.test(e.key) || e.key === 'Backspace') {
+                    inputRef.current?.focus();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+
+
 
   // Flash keyboard when name changes
   useEffect(() => {
@@ -155,6 +176,7 @@ export const KeyboardSignature = () => {
     >
       <input
         autoFocus
+        ref={inputRef}
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Enter your name"
