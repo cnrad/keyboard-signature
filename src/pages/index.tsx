@@ -19,7 +19,7 @@ export default function Home() {
         <title>Digitized Signatures</title>
       </Head>
       <div
-        className={`w-screen h-screen flex flex-col items-center sm:justify-center ${sans.variable} ${mono.variable} font-sans py-10`}
+        className={`w-screen h-screen flex flex-col sm:items-center sm:justify-center ${sans.variable} ${mono.variable} font-sans py-10 overflow-x-auto overflow-y-auto`}
       >
         <KeyboardSignature />
       </div>
