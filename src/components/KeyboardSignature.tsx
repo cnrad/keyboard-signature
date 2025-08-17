@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 
-type KeyboardLayout = "qwerty";
+enum KeyboardLayout {
+  qwerty = "qwerty",
+  colemak = "colemak",
+}
+
 type Key = {
   x: number;
   y: number;
 };
 
 const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
-  qwerty: {
+  [KeyboardLayout.qwerty]: {
     Q: { x: 0.5, y: 0 },
     W: { x: 1.5, y: 0 },
     E: { x: 2.5, y: 0 },
@@ -37,13 +41,43 @@ const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
     N: { x: 6.25, y: 2 },
     M: { x: 7.25, y: 2 },
   },
+  [KeyboardLayout.colemak]: {
+    Q: { x: 0.5, y: 0 },
+    W: { x: 1.5, y: 0 },
+    F: { x: 2.5, y: 0 },
+    P: { x: 3.5, y: 0 },
+    G: { x: 4.5, y: 0 },
+    J: { x: 5.5, y: 0 },
+    L: { x: 6.5, y: 0 },
+    U: { x: 7.5, y: 0 },
+    Y: { x: 8.5, y: 0 },
+
+    A: { x: 0.75, y: 1 },
+    R: { x: 1.75, y: 1 },
+    S: { x: 2.75, y: 1 },
+    T: { x: 3.75, y: 1 },
+    D: { x: 4.75, y: 1 },
+    H: { x: 5.75, y: 1 },
+    N: { x: 6.75, y: 1 },
+    E: { x: 7.75, y: 1 },
+    I: { x: 8.75, y: 1 },
+    O: { x: 9.75, y: 1 },
+
+    Z: { x: 1.25, y: 2 },
+    X: { x: 2.25, y: 2 },
+    C: { x: 3.25, y: 2 },
+    V: { x: 4.25, y: 2 },
+    B: { x: 5.25, y: 2 },
+    K: { x: 6.25, y: 2 },
+    M: { x: 7.25, y: 2 },
+  },
 } as const;
 
 export const KeyboardSignature = () => {
   const [name, setName] = useState("");
   // TODO: implement multiple keyboard layouts I guess
   const [currentKeyboardLayout, _setCurrentKeyboardLayout] =
-    useState<KeyboardLayout>("qwerty");
+    useState<KeyboardLayout>(KeyboardLayout.qwerty);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   // Flash keyboard when name changes
@@ -84,7 +118,7 @@ export const KeyboardSignature = () => {
     }
 
     return path;
-  }, [name]);
+  }, [name, currentKeyboardLayout]);
 
   // Get active keys for highlighting
   const activeKeys = useMemo(() => {
@@ -94,7 +128,7 @@ export const KeyboardSignature = () => {
         .split("")
         .filter((char) => char in keyboardLayouts[currentKeyboardLayout]),
     );
-  }, [name]);
+  }, [name, currentKeyboardLayout]);
 
   // Export functions
   const exportSVG = () => {
@@ -225,6 +259,27 @@ export const KeyboardSignature = () => {
             />
           ) : null}
         </svg>
+        <div className="absolute -bottom-10 right-0">
+          <label htmlFor="keyboard-layout" className="text-white">
+            Layout:
+          </label>
+          <select
+            id="keyboard-layout"
+            className="border border-neutral-800 rounded-md ml-4 px-2 py-1 bg-neutral-900 text-white"
+            value={currentKeyboardLayout}
+            onChange={(e) => {
+              _setCurrentKeyboardLayout(e.target.value as KeyboardLayout);
+              console.log(e.target.value);
+            }}
+          >
+            {Object.values(KeyboardLayout).map((layout) => (
+              <option key={layout} value={layout} className="text-neutral-500">
+                {layout}
+              </option>
+            ))}
+          </select>
+        </div>
+
       </div>
 
       <div
