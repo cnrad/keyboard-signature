@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 
-type KeyboardLayout = "qwerty";
+enum KeyboardLayout {
+  QWERTY = "qwerty",
+  ABC = "abc",
+}
+
 type Key = {
   x: number;
   y: number;
 };
 
 const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
-  qwerty: {
+  [KeyboardLayout.QWERTY]: {
     Q: { x: 0.5, y: 0 },
     W: { x: 1.5, y: 0 },
     E: { x: 2.5, y: 0 },
@@ -37,13 +41,42 @@ const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
     N: { x: 6.25, y: 2 },
     M: { x: 7.25, y: 2 },
   },
+
+  [KeyboardLayout.ABC]: {
+    A: { x: 0.5, y: 0 },
+    B: { x: 1.5, y: 0 },
+    C: { x: 2.5, y: 0 },
+    D: { x: 3.5, y: 0 },
+    E: { x: 4.5, y: 0 },
+    F: { x: 5.5, y: 0 },
+    G: { x: 6.5, y: 0 },
+    H: { x: 7.5, y: 0 },
+    I: { x: 8.5, y: 0 },
+    J: { x: 9.5, y: 0 },
+    K: { x: 0.75, y: 1 },
+    L: { x: 1.75, y: 1 },
+    M: { x: 2.75, y: 1 },
+    N: { x: 3.75, y: 1 },
+    O: { x: 4.75, y: 1 },
+    P: { x: 5.75, y: 1 },
+    Q: { x: 6.75, y: 1 },
+    R: { x: 7.75, y: 1 },
+    S: { x: 8.75, y: 1 },
+    T: { x: 1.25, y: 2 },
+    U: { x: 2.25, y: 2 },
+    V: { x: 3.25, y: 2 },
+    W: { x: 4.25, y: 2 },
+    X: { x: 5.25, y: 2 },
+    Y: { x: 6.25, y: 2 },
+    Z: { x: 7.25, y: 2 },
+  },
 } as const;
 
 export const KeyboardSignature = () => {
   const [name, setName] = useState("");
   // TODO: implement multiple keyboard layouts I guess
   const [currentKeyboardLayout, _setCurrentKeyboardLayout] =
-    useState<KeyboardLayout>("qwerty");
+    useState<KeyboardLayout>(KeyboardLayout.QWERTY);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   // Flash keyboard when name changes
@@ -202,6 +235,34 @@ export const KeyboardSignature = () => {
           )}
         </div>
 
+        <div
+          className={`relative transition-opacity ease-out flex items-center justify-center gap-2 mt-12 ${
+            name.length === 0
+              ? "opacity-100"
+              : keyboardVisible
+                ? "opacity-100 brightness-125 duration-50"
+                : "opacity-0 duration-4000"
+          }`}
+        >
+          <label htmlFor="keyboard-layout">Layout:</label>
+          <select
+            id="keyboard-layout"
+            className="border border-neutral-800 rounded-md px-2 py-1"
+            value={currentKeyboardLayout}
+            onChange={(e) =>
+              _setCurrentKeyboardLayout(e.target.value as KeyboardLayout)
+            }
+          >
+            {
+              Object.values(KeyboardLayout).map((layout) => (
+                <option key={layout} value={layout} className="text-neutral-500">
+                  {layout}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+
         {/* Signature */}
         <svg
           className="pointer-events-none absolute top-0 left-0"
@@ -228,7 +289,7 @@ export const KeyboardSignature = () => {
       </div>
 
       <div
-        className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${name.length > 0 ? "opacity-100 tramslate-y-0 duration-1000" : "opacity-0 translate-y-2 duration-150"}`}
+        className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${name.length > 0 ? "opacity-100 translate-y-0 duration-1000" : "opacity-0 translate-y-2 duration-150"}`}
       >
         <div className="grid grid-cols-2 gap-2">
           <button
