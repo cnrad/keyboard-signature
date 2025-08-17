@@ -176,6 +176,7 @@ export const KeyboardSignature = () => {
     >
       <input
         autoFocus
+        ref={inputRef}
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Enter your name"
