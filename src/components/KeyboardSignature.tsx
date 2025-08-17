@@ -1,71 +1,28 @@
-import {useEffect, useMemo, useRef, useState} from "react";
-
-type KeyboardLayout = "qwerty";
-type Key = {
-  x: number;
-  y: number;
-};
-
-const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
-  qwerty: {
-    Q: { x: 0.5, y: 0 },
-    W: { x: 1.5, y: 0 },
-    E: { x: 2.5, y: 0 },
-    R: { x: 3.5, y: 0 },
-    T: { x: 4.5, y: 0 },
-    Y: { x: 5.5, y: 0 },
-    U: { x: 6.5, y: 0 },
-    I: { x: 7.5, y: 0 },
-    O: { x: 8.5, y: 0 },
-    P: { x: 9.5, y: 0 },
-
-    A: { x: 0.75, y: 1 },
-    S: { x: 1.75, y: 1 },
-    D: { x: 2.75, y: 1 },
-    F: { x: 3.75, y: 1 },
-    G: { x: 4.75, y: 1 },
-    H: { x: 5.75, y: 1 },
-    J: { x: 6.75, y: 1 },
-    K: { x: 7.75, y: 1 },
-    L: { x: 8.75, y: 1 },
-
-    Z: { x: 1.25, y: 2 },
-    X: { x: 2.25, y: 2 },
-    C: { x: 3.25, y: 2 },
-    V: { x: 4.25, y: 2 },
-    B: { x: 5.25, y: 2 },
-    N: { x: 6.25, y: 2 },
-    M: { x: 7.25, y: 2 },
-  },
-} as const;
+import { useEffect, useMemo, useRef, useState } from "react";
+import { keyboardLayouts, KeyboardLayout } from "@/util/constants";
 
 export const KeyboardSignature = () => {
   const [name, setName] = useState("");
-  // TODO: implement multiple keyboard layouts I guess
-  const [currentKeyboardLayout, _setCurrentKeyboardLayout] =
-    useState<KeyboardLayout>("qwerty");
+  const [currentKeyboardLayout, setCurrentKeyboardLayout] =
+    useState<KeyboardLayout>(KeyboardLayout.QWERTY);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
+  // focus on input when user types
   const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isInputFocused = document.activeElement === inputRef.current;
 
-    // focus on input when user types
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const isInputFocused = document.activeElement === inputRef.current;
+      if (!isInputFocused) {
+        if (/^[a-zA-Z]$/.test(e.key) || e.key === "Backspace") {
+          inputRef.current?.focus();
+        }
+      }
+    };
 
-            if (!isInputFocused) {
-                if (/^[a-zA-Z]$/.test(e.key) || e.key === 'Backspace') {
-                    inputRef.current?.focus();
-                }
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
-
-
-
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Flash keyboard when name changes
   useEffect(() => {
@@ -105,7 +62,7 @@ export const KeyboardSignature = () => {
     }
 
     return path;
-  }, [name]);
+  }, [name, currentKeyboardLayout]);
 
   // Get active keys for highlighting
   const activeKeys = useMemo(() => {
@@ -115,7 +72,7 @@ export const KeyboardSignature = () => {
         .split("")
         .filter((char) => char in keyboardLayouts[currentKeyboardLayout]),
     );
-  }, [name]);
+  }, [name, currentKeyboardLayout]);
 
   // Export functions
   const exportSVG = () => {
@@ -174,6 +131,29 @@ export const KeyboardSignature = () => {
     <div
       className={`flex flex-col sm:items-center sm:justify-center max-sm:mx-auto max-sm:w-[28rem] sm:w-fit`}
     >
+      <div className="max-sm:mx-auto max-sm:mb-10 sm:absolute sm:left-1/2 sm:-translate-x-1/2 sm:bottom-8 flex flex-row items-center opacity-50 hover:opacity-100 transition-all duration-200 ease-out">
+        <label
+          htmlFor="keyboard-layout"
+          className="text-white text-sm font-medium"
+        >
+          Layout:
+        </label>
+        <select
+          id="keyboard-layout"
+          className="border border-neutral-800 rounded-md ml-2 px-2 py-1 bg-neutral-900 text-white text-sm"
+          value={currentKeyboardLayout}
+          onChange={(e) => {
+            setCurrentKeyboardLayout(e.target.value as KeyboardLayout);
+          }}
+        >
+          {Object.values(KeyboardLayout).map((layout) => (
+            <option key={layout} value={layout} className="text-neutral-500">
+              {layout}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <input
         autoFocus
         ref={inputRef}
@@ -250,7 +230,7 @@ export const KeyboardSignature = () => {
       </div>
 
       <div
-        className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${name.length > 0 ? "opacity-100 tramslate-y-0 duration-1000" : "opacity-0 translate-y-2 duration-150"}`}
+        className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${name.length > 0 ? "opacity-100 translate-y-0 duration-1000" : "pointer-events-none opacity-0 translate-y-2 duration-150"}`}
       >
         <div className="grid grid-cols-2 gap-2">
           <button
@@ -274,7 +254,7 @@ export const KeyboardSignature = () => {
           href="https://github.com/cnrad/keyboard-signature"
           target="_blank"
           rel="noreferrer noopener"
-          className="font-medium text-neutral-500 border border-neutral-700/50 px-3.5 py-1.5 bg-neutral-900/50 text-sm rounded-md text-center hover:bg-neutral-900/75 hover:text-neutral-200 transition-all duration-100 ease-out"
+          className="font-medium text-neutral-500 border border-neutral-700/50 px-3.5 py-1.5 bg-neutral-900/50 text-sm rounded-md text-center active:scale-98 active:brightness-70 hover:brightness-85 transition-all duration-100 ease-out"
         >
           View on GitHub
         </a>
