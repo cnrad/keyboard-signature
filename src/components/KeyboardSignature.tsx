@@ -230,7 +230,7 @@ export const KeyboardSignature = () => {
             </div>
 
             <div
-                className={`flex flex-col gap-2 mt-8 transition-all ease-in-out ${name.length > 0 ? "opacity-100 tramslate-y-0 duration-1000" : "opacity-0 translate-y-2 duration-150"}`}
+                className={`flex flex-col gap-2 mt-8 transition-all ease-in-out ${name.length > 0 ? "opacity-100 translate-y-0 duration-1000" : "opacity-0 translate-y-2 duration-150"}`}
             >
                 <div className="grid grid-cols-2 gap-2">
                     <button
