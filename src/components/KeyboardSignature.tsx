@@ -45,7 +45,7 @@ export const KeyboardSignature = () => {
     } else {
       setKeyboardVisible(false);
     }
-  }, [name]);
+  }, [name, currentKeyboardLayout]);
 
   // Calculate signature path
   const signaturePath = useMemo(() => {
@@ -165,9 +165,9 @@ export const KeyboardSignature = () => {
                 <div
                   key={char}
                   onClick={() => setName((p) => p + char)}
-                  className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-all duration-200 active:scale-95 ${
+                  className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${
                     isCurrentKey
-                      ? "bg-white/50 border-neutral-400 text-black shadow-lg shadow-white-500/50 scale-110"
+                      ? "bg-white/50 border-neutral-400 text-black scale-110"
                       : isActive
                         ? "bg-neutral-900 border-neutral-800 text-white"
                         : "bg-transparent border-neutral-800/50 text-neutral-300"
