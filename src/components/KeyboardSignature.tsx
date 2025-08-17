@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { keyboardLayouts, KeyboardLayout } from "@/util/constants";
+import { KeyboardLayout, keyboardLayouts } from "@/util/constants";
 
 export const KeyboardSignature = () => {
   const [name, setName] = useState("");
@@ -78,7 +78,7 @@ export const KeyboardSignature = () => {
   const exportSVG = () => {
     if (!signaturePath || !name) return;
 
-    const svgContent = `<svg width="650" height="200" xmlns="http://www.w3.org/2000/svg">
+    const svgContent = `<svg width="650" height="250" xmlns="http://www.w3.org/2000/svg">
           <path d="${signaturePath}" stroke="black" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>`;
 
@@ -96,7 +96,7 @@ export const KeyboardSignature = () => {
 
     const canvas = document.createElement("canvas");
     canvas.width = 1300;
-    canvas.height = 400;
+    canvas.height = 500;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -105,7 +105,7 @@ export const KeyboardSignature = () => {
 
     // Background
     ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, 650, 200);
+    ctx.fillRect(0, 0, 650, 250);
 
     // Signature path
     ctx.strokeStyle = "white";
@@ -166,14 +166,13 @@ export const KeyboardSignature = () => {
       <div className="relative mb-4 mt-8 max-sm:mt-0 max-sm:scale-70 max-sm:-ml-22">
         {/* Keyboard */}
         <div
-          className={`relative transition-opacity ease-out ${
-            name.length === 0
-              ? "opacity-100"
-              : keyboardVisible
-                ? "opacity-100 brightness-125 duration-50"
-                : "opacity-0 duration-4000"
-          }`}
-          style={{ width: "650px", height: "200px" }}
+          className={`relative transition-opacity ease-out ${name.length === 0
+            ? "opacity-100"
+            : keyboardVisible
+              ? "opacity-100 brightness-125 duration-50"
+              : "opacity-0 duration-4000"
+            }`}
+          style={{ width: "650px", height: "250px" }}
         >
           {Object.entries(keyboardLayouts[currentKeyboardLayout]).map(
             ([char, pos]) => {
@@ -185,13 +184,12 @@ export const KeyboardSignature = () => {
                 <div
                   key={char}
                   onClick={() => setName((p) => p + char)}
-                  className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-all duration-200 active:scale-95 ${
-                    isCurrentKey
-                      ? "bg-white/50 border-neutral-400 text-black shadow-lg shadow-white-500/50 scale-110"
-                      : isActive
-                        ? "bg-neutral-900 border-neutral-800 text-white"
-                        : "bg-transparent border-neutral-800/50 text-neutral-300"
-                  }`}
+                  className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-all duration-200 active:scale-95 ${isCurrentKey
+                    ? "bg-white/50 border-neutral-400 text-black shadow-lg shadow-white-500/50 scale-110"
+                    : isActive
+                      ? "bg-neutral-900 border-neutral-800 text-white"
+                      : "bg-transparent border-neutral-800/50 text-neutral-300"
+                    }`}
                   style={{
                     left: `${pos.x * 60}px`,
                     top: `${pos.y * 60 + 15}px`,
@@ -208,7 +206,7 @@ export const KeyboardSignature = () => {
         <svg
           className="pointer-events-none absolute top-0 left-0"
           width="650"
-          height="200"
+          height="250"
           style={{ zIndex: 10 }}
         >
           <title>

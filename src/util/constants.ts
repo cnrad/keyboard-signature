@@ -8,6 +8,7 @@ export enum KeyboardLayout {
   DVORAK = "dvorak",
   AZERTY = "azerty",
   ABCDEF = "abcdef",
+  KAZAKH = "қазақ"
 }
 
 export const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
@@ -165,5 +166,48 @@ export const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
     X: { x: 5.25, y: 2 },
     Y: { x: 6.25, y: 2 },
     Z: { x: 7.25, y: 2 },
+  },
+  [KeyboardLayout.KAZAKH]: {
+    Ә: { x: 0.5, y: 0 },
+    І: { x: 1.5, y: 0 },
+    Ң: { x: 2.5, y: 0 },
+    Ғ: { x: 3.5, y: 0 },
+
+    Ү: { x: 4.5, y: 0 },
+    Ұ: { x: 5.5, y: 0 },
+    Қ: { x: 6.5, y: 0 },
+    Ө: { x: 7.5, y: 0 },
+    Һ: { x: 8.5, y: 0 },
+
+    Й: { x: 0.5, y: 1 },
+    Ц: { x: 1.5, y: 1 },
+    У: { x: 2.5, y: 1 },
+    К: { x: 3.5, y: 1 },
+    Е: { x: 4.5, y: 1 },
+    Н: { x: 5.5, y: 1 },
+    Г: { x: 6.5, y: 1 },
+    Ш: { x: 7.5, y: 1 },
+    Щ: { x: 8.5, y: 1 },
+    З: { x: 9.5, y: 1 },
+
+    Ф: { x: 0.75, y: 2 },
+    Ы: { x: 1.75, y: 2 },
+    В: { x: 2.75, y: 2 },
+    А: { x: 3.75, y: 2 },
+    П: { x: 4.75, y: 2 },
+    Р: { x: 5.75, y: 2 },
+    О: { x: 6.75, y: 2 },
+    Л: { x: 7.75, y: 2 },
+    Д: { x: 8.75, y: 2 },
+
+    Я: { x: 1.25, y: 3 },
+    Ч: { x: 2.25, y: 3 },
+    С: { x: 3.25, y: 3 },
+    М: { x: 4.25, y: 3 },
+    И: { x: 5.25, y: 3 },
+    Т: { x: 6.25, y: 3 },
+    Ь: { x: 7.25, y: 3 },
+    Б: { x: 8.25, y: 3 },
+    Ю: { x: 9.25, y: 3 },
   },
 } as const;
