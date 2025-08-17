@@ -288,34 +288,26 @@ export const KeyboardSignature = () => {
             />
           ) : null}
         </svg>
-      </div>
 
-      <div
-        className={`relative transition-opacity ease-out flex items-center justify-center gap-2 mt-12 ${
-          name.length === 0
-            ? "opacity-100"
-            : keyboardVisible
-            ? "opacity-100 brightness-125 duration-50"
-            : "opacity-0 duration-4000"
-        }`}
-      >
-        <label htmlFor="keyboard-layout" className="text-white">
-          Layout:
-        </label>
-        <select
-          id="keyboard-layout"
-          className="border border-neutral-800 rounded-md px-2 py-1 bg-neutral-900 text-white"
-          value={currentKeyboardLayout}
-          onChange={(e) =>
-            _setCurrentKeyboardLayout(e.target.value as KeyboardLayout)
-          }
-        >
-          {Object.values(KeyboardLayout).map((layout) => (
-            <option key={layout} value={layout} className="text-neutral-500">
-              {layout}
-            </option>
-          ))}
-        </select>
+        <div className="absolute -bottom-10 right-0">
+          <label htmlFor="keyboard-layout" className="text-white">
+            Layout:
+          </label>
+          <select
+            id="keyboard-layout"
+            className="border border-neutral-800 rounded-md ml-4 px-2 py-1 bg-neutral-900 text-white"
+            value={currentKeyboardLayout}
+            onChange={(e) =>
+              _setCurrentKeyboardLayout(e.target.value as KeyboardLayout)
+            }
+          >
+            {Object.values(KeyboardLayout).map((layout) => (
+              <option key={layout} value={layout} className="text-neutral-500">
+                {layout}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div
