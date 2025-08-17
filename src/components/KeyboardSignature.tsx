@@ -1,9 +1,146 @@
 import { useEffect, useMemo, useState } from "react";
 
 type KeyboardLayout = "qwerty";
+type CurveType =
+  | "linear"
+  | "catmull-rom"
+  | "quadratic-bezier"
+  | "cubic-bezier"
+  | "simple-curve";
+
 type Key = {
   x: number;
   y: number;
+};
+
+const generateLinearPath = (points: { x: number; y: number }[]): string => {
+  if (points.length === 0) return "";
+  let path = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length; i++) {
+    path += ` L ${points[i].x} ${points[i].y}`;
+  }
+  return path;
+};
+
+const generateCatmullRomPath = (points: { x: number; y: number }[]): string => {
+  if (points.length < 2) return "";
+  if (points.length === 2)
+    return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+
+  let path = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = i === 0 ? points[0] : points[i - 1];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 =
+      i === points.length - 2 ? points[points.length - 1] : points[i + 2];
+
+    const tension = 0.5;
+
+    const cp1x = p1.x + ((p2.x - p0.x) * tension) / 6;
+    const cp1y = p1.y + ((p2.y - p0.y) * tension) / 6;
+    const cp2x = p2.x - ((p3.x - p1.x) * tension) / 6;
+    const cp2y = p2.y - ((p3.y - p1.y) * tension) / 6;
+
+    path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+  }
+
+  return path;
+};
+
+const generateQuadraticBezierPath = (
+  points: { x: number; y: number }[]
+): string => {
+  if (points.length < 2) return "";
+  if (points.length === 2)
+    return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+
+  let path = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i];
+    const next = points[i + 1];
+
+    // Control point is midway between current and next, offset perpendicular
+    const midX = (current.x + next.x) / 2;
+    const midY = (current.y + next.y) / 2;
+
+    path += ` Q ${midX} ${midY} ${next.x} ${next.y}`;
+  }
+
+  return path;
+};
+
+const generateCubicBezierPath = (
+  points: { x: number; y: number }[]
+): string => {
+  if (points.length < 2) return "";
+  if (points.length === 2)
+    return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+
+  let path = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i];
+    const next = points[i + 1];
+
+    // Control points at 1/3 and 2/3 of the way, with slight curve
+    const dx = next.x - current.x;
+    const dy = next.y - current.y;
+
+    const cp1x = current.x + dx * 0.3;
+    const cp1y = current.y + dy * 0.3 - 20;
+    const cp2x = current.x + dx * 0.7;
+    const cp2y = current.y + dy * 0.7 + 20;
+
+    path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${next.x} ${next.y}`;
+  }
+
+  return path;
+};
+
+const generateSimpleCurvePath = (
+  points: { x: number; y: number }[]
+): string => {
+  if (points.length < 2) return "";
+  if (points.length === 2)
+    return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+
+  let path = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i];
+    const next = points[i + 1];
+
+    // Simple smooth curve with control point offset
+    const cpX = (current.x + next.x) / 2;
+    const cpY = Math.min(current.y, next.y) - 15;
+
+    path += ` Q ${cpX} ${cpY} ${next.x} ${next.y}`;
+  }
+
+  return path;
+};
+
+const generatePath = (
+  points: { x: number; y: number }[],
+  curveType: CurveType
+): string => {
+  switch (curveType) {
+    case "linear":
+      return generateLinearPath(points);
+    case "catmull-rom":
+      return generateCatmullRomPath(points);
+    case "quadratic-bezier":
+      return generateQuadraticBezierPath(points);
+    case "cubic-bezier":
+      return generateCubicBezierPath(points);
+    case "simple-curve":
+      return generateSimpleCurvePath(points);
+    default:
+      return generateLinearPath(points);
+  }
 };
 
 const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
@@ -41,6 +178,7 @@ const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
 
 export const KeyboardSignature = () => {
   const [name, setName] = useState("");
+  const [curveType, setCurveType] = useState<CurveType>("simple-curve");
   // TODO: implement multiple keyboard layouts I guess
   const [currentKeyboardLayout, _setCurrentKeyboardLayout] =
     useState<KeyboardLayout>("qwerty");
@@ -77,14 +215,8 @@ export const KeyboardSignature = () => {
 
     if (points.length === 0) return "";
 
-    // SVG path
-    let path = `M ${points[0].x} ${points[0].y}`;
-    for (let i = 1; i < points.length; i++) {
-      path += ` L ${points[i].x} ${points[i].y}`;
-    }
-
-    return path;
-  }, [name]);
+    return generatePath(points, curveType);
+  }, [name, curveType]);
 
   // Get active keys for highlighting
   const activeKeys = useMemo(() => {
@@ -92,7 +224,7 @@ export const KeyboardSignature = () => {
       name
         .toUpperCase()
         .split("")
-        .filter((char) => char in keyboardLayouts[currentKeyboardLayout]),
+        .filter((char) => char in keyboardLayouts[currentKeyboardLayout])
     );
   }, [name]);
 
@@ -161,6 +293,30 @@ export const KeyboardSignature = () => {
         className="placeholder-neutral-800 [&::placeholder]:duration-200 [&::placeholder]:transition-all focus:placeholder-neutral-600 tracking-wide text-4xl text-white bg-transparent duration-150 transition-all ease-out px-4 py-2 text-center outline-none"
       />
 
+      <div className="mt-4 flex flex-wrap justify-center gap-2">
+        {(
+          [
+            "linear",
+            "simple-curve",
+            "quadratic-bezier",
+            "cubic-bezier",
+            "catmull-rom",
+          ] as CurveType[]
+        ).map((type) => (
+          <button
+            key={type}
+            onClick={() => setCurveType(type)}
+            className={`px-3 py-1 text-xs rounded-full transition-all duration-200 ${
+              curveType === type
+                ? "bg-white text-black font-medium"
+                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200"
+            }`}
+          >
+            {type.replace("-", " ")}
+          </button>
+        ))}
+      </div>
+
       <div className="relative mb-4 mt-8 max-sm:mt-0 max-sm:scale-70 max-sm:-ml-22">
         {/* Keyboard */}
         <div
@@ -168,8 +324,8 @@ export const KeyboardSignature = () => {
             name.length === 0
               ? "opacity-100"
               : keyboardVisible
-                ? "opacity-100 brightness-125 duration-50"
-                : "opacity-0 duration-4000"
+              ? "opacity-100 brightness-125 duration-50"
+              : "opacity-0 duration-4000"
           }`}
           style={{ width: "650px", height: "200px" }}
         >
@@ -187,8 +343,8 @@ export const KeyboardSignature = () => {
                     isCurrentKey
                       ? "bg-white/50 border-neutral-400 text-black shadow-lg shadow-white-500/50 scale-110"
                       : isActive
-                        ? "bg-neutral-900 border-neutral-800 text-white"
-                        : "bg-transparent border-neutral-800/50 text-neutral-300"
+                      ? "bg-neutral-900 border-neutral-800 text-white"
+                      : "bg-transparent border-neutral-800/50 text-neutral-300"
                   }`}
                   style={{
                     left: `${pos.x * 60}px`,
@@ -198,7 +354,7 @@ export const KeyboardSignature = () => {
                   {char}
                 </div>
               );
-            },
+            }
           )}
         </div>
 
@@ -228,7 +384,11 @@ export const KeyboardSignature = () => {
       </div>
 
       <div
-        className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${name.length > 0 ? "opacity-100 tramslate-y-0 duration-1000" : "opacity-0 translate-y-2 duration-150"}`}
+        className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${
+          name.length > 0
+            ? "opacity-100 tramslate-y-0 duration-1000"
+            : "opacity-0 translate-y-2 duration-150"
+        }`}
       >
         <div className="grid grid-cols-2 gap-2">
           <button
