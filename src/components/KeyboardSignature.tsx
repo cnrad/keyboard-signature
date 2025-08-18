@@ -19,6 +19,7 @@ import {
 	useSignatureByName,
 	useSearchSignatures,
 } from "@/hooks/useSignaturesQuery";
+import { useDebounce } from "@/hooks/useDebounce";
 import { XIcon } from "./XIcon";
 
 export const KeyboardSignature = () => {
@@ -36,6 +37,10 @@ export const KeyboardSignature = () => {
 	const [showSearchInput, setShowSearchInput] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 
+	// Debounce only the API requests, not signature generation
+	const debouncedName = useDebounce(name, 300); // 300ms delay for API calls only
+	const debouncedSearchQuery = useDebounce(searchQuery, 300); // 300ms delay for search
+
 	const [selectedSignature, setSelectedSignature] =
 		useState<ClaimedSignature | null>(null);
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -43,8 +48,8 @@ export const KeyboardSignature = () => {
 
 	const { user, signInWithTwitter, signOut } = useAuth();
 	const claimSignatureMutation = useClaimSignature();
-	const { data: existingSignature } = useSignatureByName(name);
-	const { searchResults } = useSearchSignatures(searchQuery);
+	const { data: existingSignature } = useSignatureByName(debouncedName); // API call debounced
+	const { searchResults } = useSearchSignatures(debouncedSearchQuery); // Search API debounced
 	const [strokeConfig, setStrokeConfig] = useState<StrokeConfig>({
 		style: StrokeStyle.SOLID,
 		color: "#ffffff",
@@ -88,7 +93,7 @@ export const KeyboardSignature = () => {
 	}, [includeNumbers]);
 
 	useEffect(() => {
-		if (!name) {
+		if (!debouncedName) {
 			setClaimedBy(null);
 			setClaimError(null);
 			return;
@@ -101,7 +106,7 @@ export const KeyboardSignature = () => {
 			setClaimedBy(null);
 			setClaimError(null);
 		}
-	}, [name, existingSignature]);
+	}, [debouncedName, existingSignature]);
 
 	useEffect(() => {
 		if (name.length > 1) {
@@ -114,7 +119,7 @@ export const KeyboardSignature = () => {
 	}, [name, currentKeyboardLayout, includeNumbers]);
 
 	const signaturePath = useMemo(() => {
-		if (!name) return "";
+		if (!name) return ""; // Use name directly for immediate signature generation
 
 		const points = [];
 		const currentLayout = getKeyboardLayout(
@@ -132,7 +137,7 @@ export const KeyboardSignature = () => {
 
 		if (points.length === 0) return "";
 		return generatePath(points, curveType);
-	}, [name, currentKeyboardLayout, curveType, includeNumbers]);
+	}, [name, currentKeyboardLayout, curveType, includeNumbers]); // Use name directly
 
 	const activeKeys = useMemo(() => {
 		const currentLayout = getKeyboardLayout(
@@ -145,7 +150,7 @@ export const KeyboardSignature = () => {
 				.split("")
 				.filter((char) => char in currentLayout),
 		);
-	}, [name, currentKeyboardLayout, includeNumbers]);
+	}, [name, currentKeyboardLayout, includeNumbers]); // Use name directly
 
 	const handleLogin = async () => {
 		await signInWithTwitter();
@@ -396,6 +401,12 @@ export const KeyboardSignature = () => {
 									exit={{ opacity: 0, y: -10 }}
 									className="search-results absolute top-full left-0 mt-2 w-80 max-w-[90vw] sm:w-96 z-30"
 								>
+									{searchQuery.trim() &&
+										searchQuery !== debouncedSearchQuery && (
+											<div className="px-4 py-3 text-center text-neutral-400 text-sm">
+												Searching...
+											</div>
+										)}
 									{searchResults.length > 0 ? (
 										<div className="py-2">
 											{searchResults.map((signature: ClaimedSignature) => (
