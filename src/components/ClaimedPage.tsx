@@ -8,8 +8,7 @@ interface ClaimedPageProps {
 }
 
 export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
-	const { data: userClaimedSignatures = [], isLoading } =
-		useUserClaimedSignatures();
+	const { data: userClaimedSignatures = [] } = useUserClaimedSignatures();
 
 	const downloadSignature = (signature: ClaimedSignature) => {
 		const height = signature.include_numbers ? 260 : 200;
@@ -61,9 +60,16 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
 				<div className="flex items-center gap-4">
 					<button
 						onClick={onBack}
+						type="button"
 						className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors duration-150"
 					>
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="currentColor"
+							aria-hidden="true"
+						>
 							<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.42-1.41L7.83 13H20v-2z" />
 						</svg>
 						Back
@@ -101,6 +107,7 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
 											height="200"
 											viewBox="0 0 600 200"
 											className="w-full h-full"
+											aria-label={`Signature for ${signature.name}`}
 										>
 											<defs>
 												{signature.stroke_config.style === "gradient" && (
@@ -153,6 +160,7 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
 								<div className=" max-sm:mt-4 flex items-center gap-2 max-sm:w-full">
 									<button
 										onClick={() => downloadSignature(signature)}
+										type="button"
 										className="bg-white text-black px-4 py-2 rounded-md text-sm font-medium hover:brightness-85 transition-all duration-150 max-sm:w-full"
 									>
 										Download

@@ -27,7 +27,7 @@ export const signatureKeys = {
 
 // Hook to get all claimed signatures
 export const useClaimedSignatures = () => {
-	return useQuery({
+	return useQuery<ClaimedSignature[]>({
 		queryKey: signatureKeys.lists(),
 		queryFn: getClaimedSignaturesAction,
 		staleTime: 5 * 60 * 1000, // 5 minutes
@@ -36,7 +36,7 @@ export const useClaimedSignatures = () => {
 
 // Hook to get signature by name
 export const useSignatureByName = (name: string) => {
-	return useQuery({
+	return useQuery<ClaimedSignature | null>({
 		queryKey: signatureKeys.detail(name),
 		queryFn: () => getSignatureByNameAction(name),
 		enabled: !!name && name.length > 0,
@@ -46,7 +46,7 @@ export const useSignatureByName = (name: string) => {
 
 // Hook to get user's claimed signatures
 export const useUserClaimedSignatures = () => {
-	return useQuery({
+	return useQuery<ClaimedSignature[]>({
 		queryKey: signatureKeys.user(),
 		queryFn: getUserClaimedSignaturesAction,
 		staleTime: 5 * 60 * 1000, // 5 minutes
