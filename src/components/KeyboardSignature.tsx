@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  keyboardLayouts,
   KeyboardLayout,
   CurveType,
   generatePath,
+  getKeyboardLayout,
 } from "@/util/constants";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -14,6 +14,7 @@ export const KeyboardSignature = () => {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [curveType, setCurveType] = useState<CurveType>("linear");
   const [optionsOpen, setOptionsOpen] = useState(true);
+  const [includeNumbers, setIncludeNumbers] = useState(false);
 
   // Focus on input when user types
   const inputRef = useRef<HTMLInputElement>(null);
@@ -22,7 +23,8 @@ export const KeyboardSignature = () => {
       const isInputFocused = document.activeElement === inputRef.current;
 
       if (!isInputFocused) {
-        if (/^[a-zA-Z]$/.test(e.key) || e.key === "Backspace") {
+        const regex = includeNumbers ? /^[a-zA-Z0-9]$/ : /^[a-zA-Z]$/;
+        if (regex.test(e.key) || e.key === "Backspace") {
           inputRef.current?.focus();
         }
       }
@@ -30,7 +32,7 @@ export const KeyboardSignature = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [includeNumbers]);
 
   // Flash keyboard when name changes
   useEffect(() => {
@@ -45,19 +47,20 @@ export const KeyboardSignature = () => {
     } else {
       setKeyboardVisible(false);
     }
-  }, [name, currentKeyboardLayout]);
+  }, [name, currentKeyboardLayout, includeNumbers]);
 
   // Calculate signature path
   const signaturePath = useMemo(() => {
     if (!name) return "";
 
     const points = [];
+    const currentLayout = getKeyboardLayout(currentKeyboardLayout, includeNumbers);
 
     for (const char of name.toUpperCase()) {
-      if (char in keyboardLayouts[currentKeyboardLayout]) {
-        const { x, y } = keyboardLayouts[currentKeyboardLayout][char];
-        // Adjust coordinates (multiply by 60 for spacing)
-        points.push({ x: x * 60 + 28, y: y * 60 + 40 });
+      if (char in currentLayout) {
+        const { x, y } = currentLayout[char];
+        const yOffset = includeNumbers ? 100 : 40;
+        points.push({ x: x * 60 + 28, y: y * 60 + yOffset });
       }
     }
 
@@ -65,23 +68,25 @@ export const KeyboardSignature = () => {
 
     // SVG path
     return generatePath(points, curveType);
-  }, [name, currentKeyboardLayout, curveType]);
+  }, [name, currentKeyboardLayout, curveType, includeNumbers]);
 
   // Get active keys for highlighting
   const activeKeys = useMemo(() => {
+    const currentLayout = getKeyboardLayout(currentKeyboardLayout, includeNumbers);
     return new Set(
       name
         .toUpperCase()
         .split("")
-        .filter((char) => char in keyboardLayouts[currentKeyboardLayout]),
+        .filter((char) => char in currentLayout),
     );
-  }, [name, currentKeyboardLayout]);
+  }, [name, currentKeyboardLayout, includeNumbers]);
 
   // Export functions
   const exportSVG = () => {
     if (!signaturePath || !name) return;
 
-    const svgContent = `<svg width="650" height="200" xmlns="http://www.w3.org/2000/svg">
+    const height = includeNumbers ? 260 : 200;
+    const svgContent = `<svg width="650" height="${height}" xmlns="http://www.w3.org/2000/svg">
           <path d="${signaturePath}" stroke="black" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>`;
 
@@ -97,9 +102,10 @@ export const KeyboardSignature = () => {
   const exportPNG = () => {
     if (!signaturePath || !name) return;
 
+    const height = includeNumbers ? 260 : 200;
     const canvas = document.createElement("canvas");
     canvas.width = 1300;
-    canvas.height = 400;
+    canvas.height = height * 2;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -108,7 +114,7 @@ export const KeyboardSignature = () => {
 
     // Background
     ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, 650, 200);
+    ctx.fillRect(0, 0, 650, height);
 
     // Signature path
     ctx.strokeStyle = "white";
@@ -146,16 +152,15 @@ export const KeyboardSignature = () => {
       <div className="relative mb-4 mt-8 max-sm:mt-0 max-sm:scale-70 max-sm:-ml-22">
         {/* Keyboard */}
         <div
-          className={`relative transition-opacity ease-out ${
-            name.length === 0
-              ? "opacity-100"
-              : keyboardVisible
-                ? "opacity-100 brightness-125 duration-50"
-                : "opacity-0 duration-4000"
-          }`}
-          style={{ width: "650px", height: "200px" }}
+          className={`relative transition-opacity ease-out ${name.length === 0
+            ? "opacity-100"
+            : keyboardVisible
+              ? "opacity-100 brightness-125 duration-50"
+              : "opacity-0 duration-4000"
+            }`}
+          style={{ width: "650px", height: includeNumbers ? "260px" : "200px" }}
         >
-          {Object.entries(keyboardLayouts[currentKeyboardLayout]).map(
+          {Object.entries(getKeyboardLayout(currentKeyboardLayout, includeNumbers)).map(
             ([char, pos]) => {
               const isActive = activeKeys.has(char);
               const isCurrentKey =
@@ -165,16 +170,15 @@ export const KeyboardSignature = () => {
                 <div
                   key={char}
                   onClick={() => setName((p) => p + char)}
-                  className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${
-                    isCurrentKey
-                      ? "bg-white/50 border-neutral-400 text-black scale-110"
-                      : isActive
-                        ? "bg-neutral-900 border-neutral-800 text-white"
-                        : "bg-transparent border-neutral-800/50 text-neutral-300"
-                  }`}
+                  className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${isCurrentKey
+                    ? "bg-white/50 border-neutral-400 text-black scale-110"
+                    : isActive
+                      ? "bg-neutral-900 border-neutral-800 text-white"
+                      : "bg-transparent border-neutral-800/50 text-neutral-300"
+                    }`}
                   style={{
                     left: `${pos.x * 60}px`,
-                    top: `${pos.y * 60 + 15}px`,
+                    top: `${pos.y * 60 + (includeNumbers ? 75 : 15)}px`,
                   }}
                 >
                   {char}
@@ -188,7 +192,7 @@ export const KeyboardSignature = () => {
         <svg
           className="pointer-events-none absolute top-0 left-0"
           width="650"
-          height="200"
+          height={includeNumbers ? "260" : "200"}
           style={{ zIndex: 10 }}
         >
           <title>
@@ -305,16 +309,31 @@ export const KeyboardSignature = () => {
                   <button
                     key={type}
                     onClick={() => setCurveType(type)}
-                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${
-                      curveType === type
-                        ? "bg-white text-black font-medium border-white"
-                        : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
-                    }`}
+                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${curveType === type
+                      ? "bg-white text-black font-medium border-white"
+                      : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
+                      }`}
                   >
                     {type.replace("-", " ")}
                   </button>
                 ))}
               </div>
+
+              {/* Numbers Toggle */}
+              <p className="text-neutral-300 text-sm font-medium mr-8">
+                Numbers
+              </p>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeNumbers}
+                  onChange={(e) => setIncludeNumbers(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${includeNumbers ? 'bg-white' : 'bg-neutral-700'}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-black rounded-full transition-transform duration-200 ${includeNumbers ? 'translate-x-5' : 'translate-x-0'}`} />
+                </div>
+              </label>
             </div>
           </motion.div>
         ) : (

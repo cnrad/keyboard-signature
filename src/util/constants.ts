@@ -10,6 +10,19 @@ export enum KeyboardLayout {
   ABCDEF = "abcdef",
 }
 
+export const numberRow: Record<string, Key> = {
+  "1": { x: 0.5, y: -1 },
+  "2": { x: 1.5, y: -1 },
+  "3": { x: 2.5, y: -1 },
+  "4": { x: 3.5, y: -1 },
+  "5": { x: 4.5, y: -1 },
+  "6": { x: 5.5, y: -1 },
+  "7": { x: 6.5, y: -1 },
+  "8": { x: 7.5, y: -1 },
+  "9": { x: 8.5, y: -1 },
+  "0": { x: 9.5, y: -1 },
+};
+
 export const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
   [KeyboardLayout.QWERTY]: {
     Q: { x: 0.5, y: 0 },
@@ -167,6 +180,11 @@ export const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
     Z: { x: 7.25, y: 2 },
   },
 } as const;
+
+export const getKeyboardLayout = (layout: KeyboardLayout, includeNumbers: boolean): Record<string, Key> => {
+  const baseLayout = keyboardLayouts[layout];
+  return includeNumbers ? { ...numberRow, ...baseLayout } : baseLayout;
+};
 
 export type CurveType =
   | "linear"
