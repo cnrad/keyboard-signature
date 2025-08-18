@@ -85,34 +85,3 @@ export async function requireAuth(req: NextApiRequest, res: NextApiResponse) {
 
 	return user;
 }
-
-export type AuthorizedAction<T = unknown> = (
-	user: NonNullable<Awaited<ReturnType<typeof getServerUser>>>,
-	req: NextApiRequest,
-	res: NextApiResponse,
-	...args: unknown[]
-) => Promise<T>;
-
-export async function authorizedAction<T>(
-	action: AuthorizedAction<T>,
-	req: NextApiRequest,
-	res: NextApiResponse,
-	...args: unknown[]
-): Promise<{ success: boolean; data?: T; error?: string }> {
-	try {
-		const user = await getServerUser(req, res);
-
-		if (!user) {
-			return { success: false, error: "Unauthorized" };
-		}
-
-		const result = await action(user, req, res, ...args);
-		return { success: true, data: result };
-	} catch (error) {
-		console.error("Authorized action error:", error);
-		return {
-			success: false,
-			error: error instanceof Error ? error.message : "Unknown error",
-		};
-	}
-}
