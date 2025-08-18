@@ -8,6 +8,7 @@ export enum KeyboardLayout {
   DVORAK = "dvorak",
   AZERTY = "azerty",
   ABCDEF = "abcdef",
+  ARABIC = "arabic",
 }
 
 export const numberRow: Record<string, Key> = {
@@ -179,11 +180,70 @@ export const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
     Y: { x: 6.25, y: 2 },
     Z: { x: 7.25, y: 2 },
   },
+
+  [KeyboardLayout.ARABIC]: {
+    // Top row (ض ص ث ق ف غ ع ه خ ح ج د)
+    ض: { x: 0.5, y: 0 },
+    ص: { x: 1.5, y: 0 },
+    ث: { x: 2.5, y: 0 },
+    ق: { x: 3.5, y: 0 },
+    ف: { x: 4.5, y: 0 },
+    غ: { x: 5.5, y: 0 },
+    ع: { x: 6.5, y: 0 },
+    ه: { x: 7.5, y: 0 },
+    خ: { x: 8.5, y: 0 },
+    ح: { x: 9.5, y: 0 },
+    ج: { x: 10.5, y: 0 },
+    د: { x: 11.5, y: 0 },
+
+    // Middle row (ش س ي ب ل ا ت ن م ك ط)
+    ش: { x: 0.75, y: 1 },
+    س: { x: 1.75, y: 1 },
+    ي: { x: 2.75, y: 1 },
+    ب: { x: 3.75, y: 1 },
+    ل: { x: 4.75, y: 1 },
+    ا: { x: 5.75, y: 1 },
+    ت: { x: 6.75, y: 1 },
+    ن: { x: 7.75, y: 1 },
+    م: { x: 8.75, y: 1 },
+    ك: { x: 9.75, y: 1 },
+    ط: { x: 10.75, y: 1 },
+
+    // Bottom row (ئ ء ؤ ر لا ى ة و ز ظ)
+    ئ: { x: 1.25, y: 2 },
+    ء: { x: 2.25, y: 2 },
+    ؤ: { x: 3.25, y: 2 },
+    ر: { x: 4.25, y: 2 },
+    لا: { x: 5.25, y: 2 },
+    ى: { x: 6.25, y: 2 },
+    ة: { x: 7.25, y: 2 },
+    و: { x: 8.25, y: 2 },
+    ز: { x: 9.25, y: 2 },
+    ظ: { x: 10.25, y: 2 },
+  },
 } as const;
 
 export const getKeyboardLayout = (layout: KeyboardLayout, includeNumbers: boolean): Record<string, Key> => {
   const baseLayout = keyboardLayouts[layout];
   return includeNumbers ? { ...numberRow, ...baseLayout } : baseLayout;
+};
+
+export const getKeyboardDimensions = (layout: KeyboardLayout, includeNumbers: boolean) => {
+  const currentLayout = getKeyboardLayout(layout, includeNumbers);
+  const keys = Object.values(currentLayout);
+  
+  if (keys.length === 0) {
+    return { width: 650, height: includeNumbers ? 260 : 200 };
+  }
+
+  const maxX = Math.max(...keys.map(key => key.x));
+  
+  // Calculate width and height based on key positions
+  // Add padding for key size (60px per unit + extra padding)
+  const width = Math.max(650, (maxX + 1) * 60 + 56); // 56px padding for last key
+  const height = includeNumbers ? 260 : 200;
+  
+  return { width, height };
 };
 
 export type CurveType =
