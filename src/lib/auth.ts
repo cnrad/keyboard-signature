@@ -1,10 +1,26 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
+import { parse, serialize } from "cookie";
 import { NextApiRequest, NextApiResponse } from "next";
-import { serialize, parse } from "cookie";
 
+// Client for server-side operations with service role (full access)
+export function createServiceSupabaseClient() {
+	return createClient(
+		process.env.NEXT_PUBLIC_SUPABASE_URL!,
+		process.env.SUPABASE_SERVICE_ROLE_KEY!, // Service role key - NEVER expose to client
+		{
+			auth: {
+				autoRefreshToken: false,
+				persistSession: false,
+			},
+		},
+	);
+}
+
+// Client for API routes with user context (limited access)
 export async function createServerSupabaseClient(
-	req?: NextApiRequest,
-	res?: NextApiResponse,
+	req: NextApiRequest,
+	res: NextApiResponse,
 ) {
 	if (!req || !res) {
 		throw new Error(

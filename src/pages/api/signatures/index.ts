@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { createServerSupabaseClient } from '@/lib/auth'
+import { createServiceSupabaseClient } from '@/lib/auth'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -7,9 +7,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const supabase = await createServerSupabaseClient(req, res)
+    // Use service role client for database operations
+    const serviceClient = createServiceSupabaseClient()
 
-    const { data, error } = await supabase
+    const { data, error } = await serviceClient
       .from('claimed_signatures')
       .select('*')
       .order('created_at', { ascending: false })
