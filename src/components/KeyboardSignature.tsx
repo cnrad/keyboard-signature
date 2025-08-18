@@ -60,7 +60,7 @@ export const KeyboardSignature = () => {
 
   // Flash keyboard when name changes
   useEffect(() => {
-    if (name.length > 0) {
+    if (name.length > 1) {
       setKeyboardVisible(true);
 
       const timer = setTimeout(() => {
@@ -216,12 +216,13 @@ export const KeyboardSignature = () => {
       <div className="relative mb-4 mt-8 max-sm:mt-0 max-sm:scale-70 max-sm:-ml-22">
         {/* Keyboard */}
         <div
-          className={`relative transition-opacity ease-out ${name.length === 0
-            ? "opacity-100"
-            : keyboardVisible
-              ? "opacity-100 brightness-125 duration-50"
-              : "opacity-0 duration-4000"
-            }`}
+          className={`relative transition-opacity ease-out ${
+            name.length < 2
+              ? "opacity-100"
+              : keyboardVisible
+                ? "opacity-100 brightness-125 duration-50"
+                : "opacity-0 duration-4000"
+          }`}
           style={{ width: "650px", height: includeNumbers ? "260px" : "200px" }}
         >
           {Object.entries(
@@ -292,7 +293,7 @@ export const KeyboardSignature = () => {
       </div>
 
       <div
-        className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-10 transition-all ease-in-out ${name.length > 0 ? "opacity-100 translate-y-0 duration-1000" : "pointer-events-none opacity-0 translate-y-2 duration-150"}`}
+        className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${name.length > 1 ? "opacity-100 translate-y-0 duration-1000" : "pointer-events-none opacity-0 translate-y-2 duration-150"}`}
       >
         <div className="grid grid-cols-2 gap-2">
           <button
