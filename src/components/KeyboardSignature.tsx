@@ -54,7 +54,10 @@ export const KeyboardSignature = () => {
     if (!name) return "";
 
     const points = [];
-    const currentLayout = getKeyboardLayout(currentKeyboardLayout, includeNumbers);
+    const currentLayout = getKeyboardLayout(
+      currentKeyboardLayout,
+      includeNumbers,
+    );
 
     for (const char of name.toUpperCase()) {
       if (char in currentLayout) {
@@ -72,7 +75,10 @@ export const KeyboardSignature = () => {
 
   // Get active keys for highlighting
   const activeKeys = useMemo(() => {
-    const currentLayout = getKeyboardLayout(currentKeyboardLayout, includeNumbers);
+    const currentLayout = getKeyboardLayout(
+      currentKeyboardLayout,
+      includeNumbers,
+    );
     return new Set(
       name
         .toUpperCase()
@@ -146,46 +152,48 @@ export const KeyboardSignature = () => {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Enter your name"
-        className="placeholder-neutral-800 [&::placeholder]:duration-200 [&::placeholder]:transition-all focus:placeholder-neutral-600 tracking-wide text-4xl text-white bg-transparent duration-150 transition-all ease-out px-4 py-2 text-center outline-none"
+        className="placeholder-neutral-800 leading-[1] [&::placeholder]:duration-200 [&::placeholder]:transition-all focus:placeholder-neutral-600 tracking-wide text-4xl text-white bg-transparent duration-150 transition-all ease-out px-4 py-2 text-center outline-none"
       />
 
       <div className="relative mb-4 mt-8 max-sm:mt-0 max-sm:scale-70 max-sm:-ml-22">
         {/* Keyboard */}
         <div
-          className={`relative transition-opacity ease-out ${name.length === 0
-            ? "opacity-100"
-            : keyboardVisible
-              ? "opacity-100 brightness-125 duration-50"
-              : "opacity-0 duration-4000"
-            }`}
+          className={`relative transition-opacity ease-out ${
+            name.length === 0
+              ? "opacity-100"
+              : keyboardVisible
+                ? "opacity-100 brightness-125 duration-50"
+                : "opacity-0 duration-4000"
+          }`}
           style={{ width: "650px", height: includeNumbers ? "260px" : "200px" }}
         >
-          {Object.entries(getKeyboardLayout(currentKeyboardLayout, includeNumbers)).map(
-            ([char, pos]) => {
-              const isActive = activeKeys.has(char);
-              const isCurrentKey =
-                name.length > 0 && name.toUpperCase()[name.length - 1] === char;
+          {Object.entries(
+            getKeyboardLayout(currentKeyboardLayout, includeNumbers),
+          ).map(([char, pos]) => {
+            const isActive = activeKeys.has(char);
+            const isCurrentKey =
+              name.length > 0 && name.toUpperCase()[name.length - 1] === char;
 
-              return (
-                <div
-                  key={char}
-                  onClick={() => setName((p) => p + char)}
-                  className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${isCurrentKey
+            return (
+              <div
+                key={char}
+                onClick={() => setName((p) => p + char)}
+                className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${
+                  isCurrentKey
                     ? "bg-white/50 border-neutral-400 text-black scale-110"
                     : isActive
                       ? "bg-neutral-900 border-neutral-800 text-white"
                       : "bg-transparent border-neutral-800/50 text-neutral-300"
-                    }`}
-                  style={{
-                    left: `${pos.x * 60}px`,
-                    top: `${pos.y * 60 + (includeNumbers ? 75 : 15)}px`,
-                  }}
-                >
-                  {char}
-                </div>
-              );
-            },
-          )}
+                }`}
+                style={{
+                  left: `${pos.x * 60}px`,
+                  top: `${pos.y * 60 + (includeNumbers ? 75 : 15)}px`,
+                }}
+              >
+                {char}
+              </div>
+            );
+          })}
         </div>
 
         {/* Signature */}
@@ -309,10 +317,11 @@ export const KeyboardSignature = () => {
                   <button
                     key={type}
                     onClick={() => setCurveType(type)}
-                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${curveType === type
-                      ? "bg-white text-black font-medium border-white"
-                      : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
-                      }`}
+                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${
+                      curveType === type
+                        ? "bg-white text-black font-medium border-white"
+                        : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
+                    }`}
                   >
                     {type.replace("-", " ")}
                   </button>
@@ -330,8 +339,12 @@ export const KeyboardSignature = () => {
                   onChange={(e) => setIncludeNumbers(e.target.checked)}
                   className="sr-only"
                 />
-                <div className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${includeNumbers ? 'bg-white' : 'bg-neutral-700'}`}>
-                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-black rounded-full transition-transform duration-200 ${includeNumbers ? 'translate-x-5' : 'translate-x-0'}`} />
+                <div
+                  className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${includeNumbers ? "bg-white" : "bg-neutral-700"}`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-black rounded-full transition-transform duration-200 ${includeNumbers ? "translate-x-5" : "translate-x-0"}`}
+                  />
                 </div>
               </label>
             </div>
