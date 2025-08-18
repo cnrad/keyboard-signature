@@ -49,14 +49,20 @@ export const useSignatures = () => {
     avatar: string | null
   ) => {
     try {
+      console.log('claimSignature called with:', { name, userId, username, avatar });
+      
       // Check if signature is already claimed
-      const { data: existingClaim } = await supabase
+      console.log('Checking for existing claim...');
+      const { data: existingClaim, error: checkError } = await supabase
         .from('claimed_signatures')
         .select('*')
         .eq('name', name.toUpperCase())
         .single()
 
+      console.log('Existing claim check:', { existingClaim, checkError });
+
       if (existingClaim) {
+        console.log('Signature already claimed by:', existingClaim.claimed_by_username);
         return {
           success: false,
           error: 'signature_already_claimed',
@@ -65,19 +71,25 @@ export const useSignatures = () => {
       }
 
       // Claim the signature
+      console.log('Inserting new claim...');
+      const insertData = {
+        name: name.toUpperCase(),
+        signature_path: signaturePath,
+        claimed_by_user_id: userId,
+        claimed_by_username: username,
+        claimed_by_avatar: avatar,
+        stroke_config: strokeConfig,
+        include_numbers: includeNumbers
+      };
+      console.log('Insert data:', insertData);
+
       const { data, error } = await supabase
         .from('claimed_signatures')
-        .insert({
-          name: name.toUpperCase(),
-          signature_path: signaturePath,
-          claimed_by_user_id: userId,
-          claimed_by_username: username,
-          claimed_by_avatar: avatar,
-          stroke_config: strokeConfig,
-          include_numbers: includeNumbers
-        })
+        .insert(insertData)
         .select()
         .single()
+
+      console.log('Insert result:', { data, error });
 
       if (error) {
         console.error('Error claiming signature:', error)
@@ -89,6 +101,7 @@ export const useSignatures = () => {
         setClaimedSignatures(prev => [data, ...prev])
       }
 
+      console.log('Claim successful!');
       return { success: true, data }
     } catch (error) {
       console.error('Error claiming signature:', error)
@@ -98,6 +111,7 @@ export const useSignatures = () => {
 
   const getSignatureByName = async (name: string) => {
     try {
+      console.log('Fetching signature for name:', name.toUpperCase())
       const { data, error } = await supabase
         .from('claimed_signatures')
         .select('*')
@@ -109,6 +123,7 @@ export const useSignatures = () => {
         return null
       }
 
+      console.log('Signature fetch result:', data)
       return data
     } catch (error) {
       console.error('Error fetching signature:', error)

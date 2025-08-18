@@ -152,10 +152,22 @@ export const KeyboardSignature = () => {
   };
 
   const handleClaim = async () => {
-    if (!user || !name || !signaturePath) return;
+    console.log('handleClaim called');
+    console.log('User:', user);
+    console.log('Name:', name);
+    console.log('SignaturePath:', signaturePath);
     
+    if (!user || !name || !signaturePath) {
+      console.log('Missing required data, returning early');
+      return;
+    }
+    
+    console.log('Checking if signature already exists...');
     const existingClaim = await getSignatureByName(name);
+    console.log('Existing claim result:', existingClaim);
+    
     if (existingClaim) {
+      console.log('Signature already claimed');
       setClaimedBy(existingClaim.claimed_by_username);
       setClaimError(`Signature already claimed by @${existingClaim.claimed_by_username}`);
       return;
@@ -163,6 +175,7 @@ export const KeyboardSignature = () => {
     
     setClaimError(null);
     
+    console.log('Attempting to claim signature...');
     // Actually claim the signature
     const result = await claimSignature(
       name,
@@ -174,13 +187,18 @@ export const KeyboardSignature = () => {
       user.profilePic
     );
     
+    console.log('Claim result:', result);
+    
     if (result.success) {
+      console.log('Claim successful, showing popup');
       setClaimedBy(user.username);
       setShowClaimPopup(true); // Show success popup
     } else if (result.error === 'signature_already_claimed') {
+      console.log('Signature was already claimed');
       setClaimedBy(result.claimedBy!);
       setClaimError(`Already claimed by @${result.claimedBy}`);
     } else {
+      console.log('Claim failed with error:', result.error);
       setClaimError('Failed to claim signature. Please try again.');
     }
   };
