@@ -54,7 +54,7 @@ export const useAuth = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'twitter',
       options: {
-        redirectTo: "http://localhost:3000"
+        redirectTo: 'https://keyboard-signature-nu.vercel.app'
       }
     })
     if (error) {
