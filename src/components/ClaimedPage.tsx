@@ -57,7 +57,7 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
       transition={{ duration: 0.3, ease: [0.6, 1, 0.26, 1] }}
       className="w-full max-w-4xl mx-auto p-6 flex flex-col justify-start h-full"
     >
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex max-sm:flex-col max-sm:items-start items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
@@ -72,7 +72,7 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
         </div>
 
         {user && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 max-sm:mt-4">
             <img
               src={user.profilePic}
               alt="Profile"
@@ -93,8 +93,8 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
               transition={{ duration: 0.2, delay: index * 0.1 }}
               className="bg-neutral-900/50 border border-neutral-700/50 rounded-lg p-6 hover:bg-neutral-800/50 transition-colors duration-200"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="flex max-sm:flex-col items-center justify-between">
+                <div className="flex items-center gap-4 max-sm:w-full">
                   <div className="bg-black rounded-lg p-4 w-40 h-20 flex items-center justify-center">
                     <svg
                       width="600"
@@ -150,10 +150,10 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className=" max-sm:mt-4 flex items-center gap-2 max-sm:w-full">
                   <button
                     onClick={() => downloadSignature(signature)}
-                    className="bg-white text-black px-4 py-2 rounded-md text-sm font-medium hover:brightness-85 transition-all duration-150"
+                    className="bg-white text-black px-4 py-2 rounded-md text-sm font-medium hover:brightness-85 transition-all duration-150 max-sm:w-full"
                   >
                     Download
                   </button>

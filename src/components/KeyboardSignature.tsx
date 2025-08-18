@@ -310,13 +310,13 @@ export const KeyboardSignature = () => {
             <path d="M12 9v4" />
             <path d="m12 17.02.01-.02" />
           </svg>
-          <p className="text-sm text-yellow-200 font-medium">
+          <p className="text-sm text-yellow-200 font-medium text-center">
             You can only claim 1 signature per account
           </p>
         </div>
       </div>
 
-      <div className="absolute top-4 left-4 z-20">
+      <div className="absolute top-6 left-6 z-20">
         <div className="relative">
           <motion.div
             animate={{
@@ -556,7 +556,7 @@ export const KeyboardSignature = () => {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Enter your name"
-        className="placeholder-neutral-800 leading-[1] [&::placeholder]:duration-200 [&::placeholder]:transition-all focus:placeholder-neutral-600 tracking-wide text-4xl text-white bg-transparent duration-150 transition-all ease-out px-4 py-2 text-center outline-none"
+        className="max-sm:mt-14 placeholder-neutral-800 leading-[1] [&::placeholder]:duration-200 [&::placeholder]:transition-all focus:placeholder-neutral-600 tracking-wide text-4xl text-white bg-transparent duration-150 transition-all ease-out px-4 py-2 text-center outline-none"
       />
 
       <div className="relative mb-4 mt-8 max-sm:mt-0 max-sm:scale-70 max-sm:-ml-22">
