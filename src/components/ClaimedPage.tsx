@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { useSignatures } from "@/hooks/useSignatures";
+import { useSignatures, type ClaimedSignature } from "@/hooks/useSignatures";
 
 interface ClaimedPageProps {
   onBack: () => void;
@@ -11,7 +11,7 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
   
   const userClaimedSignatures = user ? getUserClaimedSignatures(user.id) : [];
 
-  const downloadSignature = (signature: any) => {
+  const downloadSignature = (signature: ClaimedSignature) => {
     const height = signature.include_numbers ? 260 : 200;
     const canvas = document.createElement("canvas");
     canvas.width = 1300;

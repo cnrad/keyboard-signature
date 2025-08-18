@@ -2,6 +2,7 @@ import { GetServerSideProps } from 'next';
 import { supabase } from '@/lib/supabase';
 import { ClaimedSignature } from '@/hooks/useSignatures';
 import Head from 'next/head';
+import Link from 'next/link';
 
 interface SignaturePageProps {
   signature: ClaimedSignature | null;
@@ -14,13 +15,13 @@ export default function SignaturePage({ signature, error }: SignaturePageProps) 
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Signature Not Found</h1>
-          <p className="text-neutral-400 mb-6">The signature you're looking for doesn't exist.</p>
-          <a 
+          <p className="text-neutral-400 mb-6">The signature you&apos;re looking for doesn&apos;t exist.</p>
+          <Link 
             href="/" 
             className="bg-white text-black px-4 py-2 rounded-md text-sm font-medium hover:brightness-85 transition-all duration-150"
           >
             Create Your Signature
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -89,12 +90,12 @@ export default function SignaturePage({ signature, error }: SignaturePageProps) 
         </div>
 
         <div className="flex gap-4">
-          <a 
+          <Link 
             href="/" 
             className="bg-white text-black px-6 py-3 rounded-md text-sm font-medium hover:brightness-85 transition-all duration-150"
           >
             Create Your Signature
-          </a>
+          </Link>
           <button
             onClick={() => {
               const tweetText = `Check out this digital signature for "${signature.name}"!\n\n#DigitalSignature\n\nhttps://signature.cnrad.dev/${signature.name.toLowerCase()}`;
