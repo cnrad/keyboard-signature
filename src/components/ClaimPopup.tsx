@@ -33,6 +33,7 @@ export const ClaimPopup = ({
     window.open(twitterUrl, '_blank');
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const generateSignatureDataUrl = () => {
     const height = includeNumbers ? 260 : 200;
     const canvas = document.createElement("canvas");
@@ -152,7 +153,7 @@ export const ClaimPopup = ({
           </svg>
           <div className="text-center mt-3">
             <p className="text-white text-sm font-mono bg-neutral-800 px-2 py-1 rounded inline-block">
-              "{name}"
+              &quot;{name}&quot;
             </p>
           </div>
         </div>

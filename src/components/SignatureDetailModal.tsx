@@ -147,7 +147,7 @@ export const SignatureDetailModal = ({ signature, isOpen, onClose }: SignatureDe
           {/* Signature Info */}
           <div className="space-y-4 mb-6">
             <div>
-              <h3 className="text-xl font-semibold text-white mb-2">"{signature.name}"</h3>
+              <h3 className="text-xl font-semibold text-white mb-2">&quot;{signature.name}&quot;</h3>
             </div>
             
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">

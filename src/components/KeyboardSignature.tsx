@@ -31,6 +31,7 @@ export const KeyboardSignature = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ClaimedSignature[]>([]);
   const [selectedSignature, setSelectedSignature] = useState<ClaimedSignature | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [claimError, setClaimError] = useState<string | null>(null);
 
   const { user, signInWithTwitter, signOut } = useAuth();
@@ -379,7 +380,7 @@ export const KeyboardSignature = () => {
                   </div>
                 ) : searchQuery.trim() ? (
                   <div className="px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700/50 rounded-lg text-center">
-                    <p className="text-neutral-400 text-sm">No signatures found for "{searchQuery}"</p>
+                    <p className="text-neutral-400 text-sm">No signatures found for &quot;{searchQuery}&quot;</p>
                   </div>
                 ) : (
                   <div className="px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700/50 rounded-lg text-center">
