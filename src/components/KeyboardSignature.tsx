@@ -4,6 +4,7 @@ import {
   CurveType,
   generatePath,
   getKeyboardLayout,
+  getKeyboardDimensions,
   StrokeStyle,
   StrokeConfig,
 } from "@/util/constants";
@@ -97,6 +98,11 @@ export const KeyboardSignature = () => {
     return generatePath(points, curveType);
   }, [name, currentKeyboardLayout, curveType, includeNumbers]);
 
+  // Calculate keyboard dimensions
+  const keyboardDimensions = useMemo(() => {
+    return getKeyboardDimensions(currentKeyboardLayout, includeNumbers);
+  }, [currentKeyboardLayout, includeNumbers]);
+
   // Get active keys for highlighting
   const activeKeys = useMemo(() => {
     const currentLayout = getKeyboardLayout(
@@ -115,7 +121,7 @@ export const KeyboardSignature = () => {
   const exportSVG = () => {
     if (!signaturePath || !name) return;
 
-    const height = includeNumbers ? 260 : 200;
+    const { width, height } = keyboardDimensions;
     const gradients = strokeConfig.style === StrokeStyle.GRADIENT
       ? `<linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
            <stop offset="0%" style="stop-color:${strokeConfig.gradientStart};stop-opacity:1" />
@@ -127,7 +133,7 @@ export const KeyboardSignature = () => {
         ? strokeConfig.color
         : "url(#pathGradient)";
 
-    const svgContent = `<svg width="650" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    const svgContent = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
           <defs>${gradients}</defs>
           <path d="${signaturePath}" stroke="${strokeColor}" stroke-width="${strokeConfig.width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>`;
@@ -144,9 +150,9 @@ export const KeyboardSignature = () => {
   const exportPNG = () => {
     if (!signaturePath || !name) return;
 
-    const height = includeNumbers ? 260 : 200;
+    const { width, height } = keyboardDimensions;
     const canvas = document.createElement("canvas");
-    canvas.width = 1300;
+    canvas.width = width * 2;
     canvas.height = height * 2;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -156,7 +162,7 @@ export const KeyboardSignature = () => {
 
     // Background
     ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, 650, height);
+    ctx.fillRect(0, 0, width, height);
 
     // Configure stroke
     ctx.lineWidth = strokeConfig.width;
@@ -167,7 +173,7 @@ export const KeyboardSignature = () => {
     if (strokeConfig.style === StrokeStyle.SOLID) {
       ctx.strokeStyle = strokeConfig.color;
     } else if (strokeConfig.style === StrokeStyle.GRADIENT) {
-      const gradient = ctx.createLinearGradient(0, 0, 650, 0);
+      const gradient = ctx.createLinearGradient(0, 0, width, 0);
       gradient.addColorStop(0, strokeConfig.gradientStart);
       gradient.addColorStop(1, strokeConfig.gradientEnd);
       ctx.strokeStyle = gradient;
@@ -223,7 +229,7 @@ export const KeyboardSignature = () => {
                 ? "opacity-100 brightness-125 duration-50"
                 : "opacity-0 duration-4000"
           }`}
-          style={{ width: "650px", height: includeNumbers ? "260px" : "200px" }}
+          style={{ width: `${keyboardDimensions.width}px`, height: `${keyboardDimensions.height}px` }}
         >
           {Object.entries(
             getKeyboardLayout(currentKeyboardLayout, includeNumbers),
@@ -257,8 +263,8 @@ export const KeyboardSignature = () => {
         {/* Signature */}
         <svg
           className="pointer-events-none absolute top-0 left-0"
-          width="650"
-          height={includeNumbers ? "260" : "200"}
+          width={keyboardDimensions.width}
+          height={keyboardDimensions.height}
           style={{ zIndex: 10 }}
         >
           {/* defs for defining the SVG gradients */}
