@@ -320,7 +320,7 @@ export const KeyboardSignature = () => {
               </div>
 
               {/* Numbers Toggle */}
-              <p className="text-neutral-300 text-sm font-medium mr-8 mt-1">
+              <p className="text-neutral-300 text-sm font-medium mr-8">
                 Numbers
               </p>
               <label className="flex items-center cursor-pointer">
