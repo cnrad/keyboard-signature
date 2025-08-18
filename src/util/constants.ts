@@ -193,6 +193,19 @@ export type CurveType =
   | "cubic-bezier"
   | "simple-curve";
 
+export enum StrokeStyle {
+  SOLID = "solid",
+  GRADIENT = "gradient",
+}
+
+export type StrokeConfig = {
+  style: StrokeStyle;
+  color: string;
+  gradientStart: string;
+  gradientEnd: string;
+  width: number;
+};
+
 export const generateLinearPath = (
   points: { x: number; y: number }[],
 ): string => {
@@ -325,4 +338,18 @@ export const generatePath = (
     default:
       return generateLinearPath(points);
   }
+};
+
+// Generate SVG gradient definitions
+export const generateSVGGradients = (strokeConfig: StrokeConfig): string => {
+  if (strokeConfig.style === StrokeStyle.GRADIENT) {
+    return `
+      <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:${strokeConfig.gradientStart};stop-opacity:1" />
+        <stop offset="100%" style="stop-color:${strokeConfig.gradientEnd};stop-opacity:1" />
+      </linearGradient>
+    `;
+  }
+
+  return "";
 };

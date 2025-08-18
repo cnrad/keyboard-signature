@@ -4,8 +4,85 @@ import {
   CurveType,
   generatePath,
   getKeyboardLayout,
+  StrokeStyle,
+  StrokeConfig,
 } from "@/util/constants";
 import { AnimatePresence, motion } from "motion/react";
+
+// Custom Color Picker Component
+const ColorPicker = ({ value, onChange, className = "" }: { value: string; onChange: (color: string) => void; className?: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState<'bottom' | 'top'>('bottom');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const presetColors = [
+    "#ffffff", "#000000", "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff",
+    "#ff8000", "#8000ff", "#0080ff", "#80ff00", "#ff0080", "#00ff80", "#8080ff", "#ff8080",
+    "#808080", "#404040", "#800000", "#008000", "#000080", "#808000", "#800080", "#008080"
+  ];
+
+  const handleOpen = () => {
+    if (!buttonRef.current) return;
+
+    const rect = buttonRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const popupHeight = 180; // Approximate height of the popup
+
+    // Check if there's enough space below, otherwise position above
+    const spaceBelow = viewportHeight - rect.bottom;
+    setPosition(spaceBelow >= popupHeight ? 'bottom' : 'top');
+    setIsOpen(true);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleOpen}
+        className={`w-8 h-8 rounded border border-neutral-800 cursor-pointer ${className}`}
+        style={{ backgroundColor: value }}
+      />
+
+      {isOpen && (
+        <div className={`absolute ${position === 'bottom' ? 'top-10' : 'bottom-10'} right-0 z-50 p-3 bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg w-48`}>
+          <div className="grid grid-cols-8 gap-1 mb-3">
+            {presetColors.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => {
+                  onChange(color);
+                  setIsOpen(false);
+                }}
+                className="w-5 h-5 rounded border border-neutral-600 hover:border-neutral-400 transition-colors"
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+              className="flex-1 px-2 py-1 text-xs bg-neutral-800 border border-neutral-700 rounded text-white font-mono"
+              placeholder="#ffffff"
+            />
+          </div>
+        </div>
+      )}
+
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </div>
+  );
+};
 
 export const KeyboardSignature = () => {
   const [name, setName] = useState("");
@@ -15,6 +92,27 @@ export const KeyboardSignature = () => {
   const [curveType, setCurveType] = useState<CurveType>("linear");
   const [optionsOpen, setOptionsOpen] = useState(true);
   const [includeNumbers, setIncludeNumbers] = useState(false);
+  const [strokeConfig, setStrokeConfig] = useState<StrokeConfig>({
+    style: StrokeStyle.SOLID,
+    color: "#ffffff",
+    gradientStart: "#ff6b6b",
+    gradientEnd: "#4ecdc4",
+    width: 3,
+  });
+
+  // Reset to defaults function
+  const resetToDefaults = () => {
+    setCurrentKeyboardLayout(KeyboardLayout.QWERTY);
+    setCurveType("linear");
+    setIncludeNumbers(false);
+    setStrokeConfig({
+      style: StrokeStyle.SOLID,
+      color: "#ffffff",
+      gradientStart: "#ff6b6b",
+      gradientEnd: "#4ecdc4",
+      width: 3,
+    });
+  };
 
   // Focus on input when user types
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,8 +184,20 @@ export const KeyboardSignature = () => {
     if (!signaturePath || !name) return;
 
     const height = includeNumbers ? 260 : 200;
+    const gradients = strokeConfig.style === StrokeStyle.GRADIENT
+      ? `<linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+           <stop offset="0%" style="stop-color:${strokeConfig.gradientStart};stop-opacity:1" />
+           <stop offset="100%" style="stop-color:${strokeConfig.gradientEnd};stop-opacity:1" />
+         </linearGradient>`
+      : '';
+    const strokeColor =
+      strokeConfig.style === StrokeStyle.SOLID
+        ? strokeConfig.color
+        : "url(#pathGradient)";
+
     const svgContent = `<svg width="650" height="${height}" xmlns="http://www.w3.org/2000/svg">
-          <path d="${signaturePath}" stroke="black" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>${gradients}</defs>
+          <path d="${signaturePath}" stroke="${strokeColor}" stroke-width="${strokeConfig.width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>`;
 
     const blob = new Blob([svgContent], { type: "image/svg+xml" });
@@ -116,11 +226,20 @@ export const KeyboardSignature = () => {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, 650, height);
 
-    // Signature path
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 3;
+    // Configure stroke
+    ctx.lineWidth = strokeConfig.width;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+
+    // Set stroke style based on configuration
+    if (strokeConfig.style === StrokeStyle.SOLID) {
+      ctx.strokeStyle = strokeConfig.color;
+    } else if (strokeConfig.style === StrokeStyle.GRADIENT) {
+      const gradient = ctx.createLinearGradient(0, 0, 650, 0);
+      gradient.addColorStop(0, strokeConfig.gradientStart);
+      gradient.addColorStop(1, strokeConfig.gradientEnd);
+      ctx.strokeStyle = gradient;
+    }
 
     const path = new Path2D(signaturePath);
     ctx.stroke(path);
@@ -195,16 +314,25 @@ export const KeyboardSignature = () => {
           height={includeNumbers ? "260" : "200"}
           style={{ zIndex: 10 }}
         >
-          <title>
-            A digital signature, created by connecting the points of typed
-            letters on the keyboard.
-          </title>
+          {/* defs for defining the SVG gradients */}
+          <defs>
+            {strokeConfig.style === StrokeStyle.GRADIENT && (
+              <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor={strokeConfig.gradientStart} stopOpacity={1} />
+                <stop offset="100%" stopColor={strokeConfig.gradientEnd} stopOpacity={1} />
+              </linearGradient>
+            )}
+          </defs>
 
           {signaturePath ? (
             <path
               d={signaturePath}
-              stroke="white"
-              strokeWidth="3"
+              stroke={
+                strokeConfig.style === StrokeStyle.SOLID
+                  ? strokeConfig.color
+                  : "url(#pathGradient)"
+              }
+              strokeWidth={strokeConfig.width}
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -334,7 +462,82 @@ export const KeyboardSignature = () => {
                   <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-black rounded-full transition-transform duration-200 ${includeNumbers ? 'translate-x-5' : 'translate-x-0'}`} />
                 </div>
               </label>
+
+              {/* Color Style */}
+              <p className="text-neutral-300 text-sm font-medium mr-8 mt-1">
+                Style
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {Object.values(StrokeStyle).map((style) => (
+                  <button
+                    key={style}
+                    onClick={() => setStrokeConfig(prev => ({ ...prev, style }))}
+                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${strokeConfig.style === style
+                      ? "bg-white text-black font-medium border-white"
+                      : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
+                      }`}
+                  >
+                    {style}
+                  </button>
+                ))}
+              </div>
+
+              {/* Color Picker */}
+              {strokeConfig.style === StrokeStyle.SOLID && (
+                <>
+                  <p className="text-neutral-300 text-sm font-medium mr-8 mt-1">
+                    Color
+                  </p>
+                  <ColorPicker
+                    value={strokeConfig.color}
+                    onChange={(color) => setStrokeConfig(prev => ({ ...prev, color }))}
+                  />
+                </>
+              )}
+
+              {/* Gradient Colors */}
+              {strokeConfig.style === StrokeStyle.GRADIENT && (
+                <>
+                  <p className="text-neutral-300 text-sm font-medium mr-8 mt-1">
+                    Colors
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <ColorPicker
+                      value={strokeConfig.gradientStart}
+                      onChange={(color) => setStrokeConfig(prev => ({ ...prev, gradientStart: color }))}
+                    />
+                    <ColorPicker
+                      value={strokeConfig.gradientEnd}
+                      onChange={(color) => setStrokeConfig(prev => ({ ...prev, gradientEnd: color }))}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Stroke Width */}
+              <p className="text-neutral-300 text-sm font-medium mr-8 mt-1">
+                Width
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="1"
+                  max="8"
+                  value={strokeConfig.width}
+                  onChange={(e) => setStrokeConfig(prev => ({ ...prev, width: parseInt(e.target.value) }))}
+                  className="flex-1"
+                />
+                <span className="text-neutral-400 text-xs w-6">{strokeConfig.width}px</span>
+              </div>
             </div>
+
+            {/* Reset Button */}
+            <button
+              onClick={resetToDefaults}
+              className="mt-4 w-full px-3 py-2 text-sm bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white rounded-md transition-colors duration-150 border border-neutral-700"
+            >
+              Reset to Defaults
+            </button>
           </motion.div>
         ) : (
           <motion.button
