@@ -1,11 +1,18 @@
-import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
+import { ImageResponse } from '@vercel/og';
+import { NextRequest } from 'next/server';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { name } = req.query;
+export const runtime = 'edge';
+
+export default async function handler(req: NextRequest) {
+  const url = new URL(req.url);
+  const name = url.pathname.split('/').pop();
 
   if (!name || typeof name !== 'string') {
-    return res.status(400).json({ error: 'Invalid signature name' });
+    return new Response(JSON.stringify({ error: 'Invalid signature name' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   try {
@@ -16,42 +23,63 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single();
 
     if (error || !signature) {
-      return res.status(404).json({ error: 'Signature not found' });
+      return new Response(JSON.stringify({ error: 'Signature not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const height = signature.include_numbers ? 260 : 200;
 
-    // Generate SVG instead of using canvas
-    const strokeStyle = signature.stroke_config.style === 'gradient' 
-      ? `url(#gradient)` 
-      : signature.stroke_config.color;
-
-    const gradientDef = signature.stroke_config.style === 'gradient' 
-      ? `<defs>
-           <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-             <stop offset="0%" style="stop-color:${signature.stroke_config.gradientStart};stop-opacity:1" />
-             <stop offset="100%" style="stop-color:${signature.stroke_config.gradientEnd};stop-opacity:1" />
-           </linearGradient>
-         </defs>` 
-      : '';
-
-    const svg = `<svg width="650" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="650" height="${height}" fill="#000000"/>
-      ${gradientDef}
-      <path d="${signature.signature_path}" 
-            stroke="${strokeStyle}" 
-            stroke-width="${signature.stroke_config.width}" 
-            stroke-linecap="round" 
-            stroke-linejoin="round" 
-            fill="none"/>
-    </svg>`;
-
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, max-age=31536000');
-    res.send(svg);
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: 650,
+            height,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#000000',
+            position: 'relative',
+          }}
+        >
+          <svg 
+            width="650" 
+            height={height.toString()} 
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="650" height={height.toString()} fill="#000000"/>
+            {signature.stroke_config.style === 'gradient' && (
+              <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor={signature.stroke_config.gradientStart} stopOpacity={1} />
+                  <stop offset="100%" stopColor={signature.stroke_config.gradientEnd} stopOpacity={1} />
+                </linearGradient>
+              </defs>
+            )}
+            <path
+              d={signature.signature_path}
+              stroke={signature.stroke_config.style === 'solid' ? signature.stroke_config.color : 'url(#gradient)'}
+              strokeWidth={signature.stroke_config.width}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </svg>
+        </div>
+      ),
+      {
+        width: 650,
+        height,
+      }
+    );
 
   } catch (error) {
     console.error('Error generating signature image:', error);
-    res.status(500).json({ error: 'Failed to generate image' });
+    return new Response(JSON.stringify({ error: 'Failed to generate image' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

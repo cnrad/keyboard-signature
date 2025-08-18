@@ -33,13 +33,13 @@ export default function SignaturePage({ signature, error }: SignaturePageProps) 
     <>
       <Head>
         <title>{signature.name} - Digital Signature</title>
-        <meta name="description" content={`Digital signature for ${signature.name} created on Keyboard Signature`} />
+        <meta name="description" content={`Digital signature for ${signature.name} created on Digital Signatures`} />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`https://signature.cnrad.dev/${signature.name.toLowerCase()}`} />
         <meta property="og:title" content={`${signature.name} - Digital Signature`} />
-        <meta property="og:description" content={`Digital signature for ${signature.name} created on Keyboard Signature`} />
+        <meta property="og:description" content={`Digital signature for ${signature.name} created on Digital Signatures`} />
         <meta property="og:image" content={signatureImageUrl} />
         <meta property="og:image:width" content="650" />
         <meta property="og:image:height" content={signature.include_numbers ? "260" : "200"} />
@@ -48,7 +48,7 @@ export default function SignaturePage({ signature, error }: SignaturePageProps) 
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content={`https://signature.cnrad.dev/${signature.name.toLowerCase()}`} />
         <meta property="twitter:title" content={`${signature.name} - Digital Signature`} />
-        <meta property="twitter:description" content={`Digital signature for ${signature.name} created on Keyboard Signature`} />
+        <meta property="twitter:description" content={`Digital signature for ${signature.name} created on Digital Signatures`} />
         <meta property="twitter:image" content={signatureImageUrl} />
       </Head>
       
