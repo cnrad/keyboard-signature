@@ -21,10 +21,10 @@ export const ClaimPopup = ({
   user 
 }: ClaimPopupProps) => {
   const generateTweetText = () => {
-    const baseText = `Just claimed my keyboard signature for "${name}" ✨`;
-    const hashTags = "#KeyboardSignature #DigitalArt #Crypto";
-    const url = "https://keyboard-signature.vercel.app";
-    return `${baseText}\n\n${hashTags}\n\n${url}`;
+    const baseText = `Just claimed my digital signature for "${name}"!`;
+    const hashTags = "#DigitalSignature ca: GjbLHUmyUo6JFczvaTbsj9p1LjsXmvR8Vk9gRPNLBAGS";
+    const signatureUrl = `https://signature.cnrad.dev/${name.toLowerCase()}`;
+    return `${baseText}\n\n${hashTags}\n\n${signatureUrl}`;
   };
 
   const handleTweet = () => {
@@ -33,7 +33,6 @@ export const ClaimPopup = ({
     window.open(twitterUrl, '_blank');
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const generateSignatureDataUrl = () => {
     const height = includeNumbers ? 260 : 200;
     const canvas = document.createElement("canvas");

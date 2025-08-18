@@ -152,22 +152,14 @@ export const KeyboardSignature = () => {
   };
 
   const handleClaim = async () => {
-    console.log('handleClaim called');
-    console.log('User:', user);
-    console.log('Name:', name);
-    console.log('SignaturePath:', signaturePath);
     
     if (!user || !name || !signaturePath) {
-      console.log('Missing required data, returning early');
       return;
     }
     
-    console.log('Checking if signature already exists...');
     const existingClaim = await getSignatureByName(name);
-    console.log('Existing claim result:', existingClaim);
     
     if (existingClaim) {
-      console.log('Signature already claimed');
       setClaimedBy(existingClaim.claimed_by_username);
       setClaimError(`Signature already claimed by @${existingClaim.claimed_by_username}`);
       return;
@@ -175,7 +167,6 @@ export const KeyboardSignature = () => {
     
     setClaimError(null);
     
-    console.log('Attempting to claim signature...');
     // Actually claim the signature
     const result = await claimSignature(
       name,
@@ -187,18 +178,16 @@ export const KeyboardSignature = () => {
       user.profilePic
     );
     
-    console.log('Claim result:', result);
     
     if (result.success) {
-      console.log('Claim successful, showing popup');
       setClaimedBy(user.username);
       setShowClaimPopup(true); // Show success popup
     } else if (result.error === 'signature_already_claimed') {
-      console.log('Signature was already claimed');
       setClaimedBy(result.claimedBy!);
       setClaimError(`Already claimed by @${result.claimedBy}`);
+    } else if (result.error === 'user_already_claimed') {
+      setClaimError(`You already claimed "${result.claimedSignature}". Only 1 signature per account.`);
     } else {
-      console.log('Claim failed with error:', result.error);
       setClaimError('Failed to claim signature. Please try again.');
     }
   };
@@ -481,6 +470,20 @@ export const KeyboardSignature = () => {
             </AnimatePresence>
           </div>
         )}
+      </div>
+
+      {/* One signature per account warning */}
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center gap-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg px-4 py-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-yellow-400">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+            <path d="M12 9v4"/>
+            <path d="m12 17.02.01-.02"/>
+          </svg>
+          <p className="text-sm text-yellow-200 font-medium">
+            You can only claim 1 signature per account
+          </p>
+        </div>
       </div>
 
       <input
