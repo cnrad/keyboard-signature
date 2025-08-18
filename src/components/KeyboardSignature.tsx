@@ -154,7 +154,6 @@ export const KeyboardSignature = () => {
   const handleClaim = async () => {
     if (!user || !name || !signaturePath) return;
     
-    // Check if signature is already claimed
     const existingClaim = await getSignatureByName(name);
     if (existingClaim) {
       setClaimedBy(existingClaim.claimed_by_username);
@@ -163,7 +162,27 @@ export const KeyboardSignature = () => {
     }
     
     setClaimError(null);
-    setShowClaimPopup(true);
+    
+    // Actually claim the signature
+    const result = await claimSignature(
+      name,
+      signaturePath,
+      strokeConfig,
+      includeNumbers,
+      user.id,
+      user.username,
+      user.profilePic
+    );
+    
+    if (result.success) {
+      setClaimedBy(user.username);
+      setShowClaimPopup(true); // Show success popup
+    } else if (result.error === 'signature_already_claimed') {
+      setClaimedBy(result.claimedBy!);
+      setClaimError(`Already claimed by @${result.claimedBy}`);
+    } else {
+      setClaimError('Failed to claim signature. Please try again.');
+    }
   };
 
 
@@ -791,33 +810,7 @@ export const KeyboardSignature = () => {
         {showClaimPopup && (
           <ClaimPopup
             isOpen={showClaimPopup}
-            onClose={async () => {
-              if (!user || !name || !signaturePath) {
-                setShowClaimPopup(false);
-                return;
-              }
-              
-              const result = await claimSignature(
-                name,
-                signaturePath,
-                strokeConfig,
-                includeNumbers,
-                user.id,
-                user.username,
-                user.profilePic
-              );
-              
-              if (result.success) {
-                setClaimedBy(user.username);
-              } else if (result.error === 'signature_already_claimed') {
-                setClaimedBy(result.claimedBy!);
-                setClaimError(`Already claimed by @${result.claimedBy}`);
-              } else {
-                setClaimError('Failed to claim signature. Please try again.');
-              }
-              
-              setShowClaimPopup(false);
-            }}
+            onClose={() => setShowClaimPopup(false)}
             name={name}
             signaturePath={signaturePath}
             strokeConfig={strokeConfig}

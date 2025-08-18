@@ -13,7 +13,7 @@ interface ClaimPopupProps {
 
 export const ClaimPopup = ({ 
   isOpen, 
-  onClose, 
+  onClose,
   name, 
   signaturePath, 
   strokeConfig, 
