@@ -11,18 +11,19 @@ interface ClaimPopupProps {
   user: { username: string; profilePic: string } | null;
 }
 
-export const ClaimPopup = ({ 
-  isOpen, 
+export const ClaimPopup = ({
+  isOpen,
   onClose,
-  name, 
-  signaturePath, 
-  strokeConfig, 
+  name,
+  signaturePath,
+  strokeConfig,
   includeNumbers,
-  user 
+  user,
 }: ClaimPopupProps) => {
   const generateTweetText = () => {
     const baseText = `Just claimed my digital signature for "${name}"!`;
-    const hashTags = "#DigitalSignature ca: GjbLHUmyUo6JFczvaTbsj9p1LjsXmvR8Vk9gRPNLBAGS";
+    const hashTags =
+      "#DigitalSignature ca: GjbLHUmyUo6JFczvaTbsj9p1LjsXmvR8Vk9gRPNLBAGS";
     const signatureUrl = `https://signature.cnrad.dev/${name.toLowerCase()}`;
     return `${baseText}\n\n${hashTags}\n\n${signatureUrl}`;
   };
@@ -30,7 +31,7 @@ export const ClaimPopup = ({
   const handleTweet = () => {
     const tweetText = encodeURIComponent(generateTweetText());
     const twitterUrl = `https://twitter.com/intent/tweet?text=${tweetText}`;
-    window.open(twitterUrl, '_blank');
+    window.open(twitterUrl, "_blank");
   };
 
   const generateSignatureDataUrl = () => {
@@ -87,13 +88,15 @@ export const ClaimPopup = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Signature Claimed! 🎉</h2>
+          <h2 className="text-xl font-bold text-white">
+            Signature Claimed! 🎉
+          </h2>
           <button
             onClick={onClose}
             className="text-neutral-400 hover:text-white transition-colors duration-150"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
             </svg>
           </button>
         </div>
@@ -115,8 +118,12 @@ export const ClaimPopup = ({
 
         {/* Flex on Twitter text */}
         <div className="text-center mb-6">
-          <h3 className="text-2xl font-bold text-white mb-2">Flex on Twitter!</h3>
-          <p className="text-neutral-400 text-sm">Share your unique keyboard signature with the world</p>
+          <h3 className="text-2xl font-bold text-white mb-2">
+            Flex on Twitter!
+          </h3>
+          <p className="text-neutral-400 text-sm">
+            Share your unique keyboard signature with the world
+          </p>
         </div>
 
         {/* Signature Preview */}
@@ -130,13 +137,27 @@ export const ClaimPopup = ({
           >
             <defs>
               {strokeConfig.style === StrokeStyle.GRADIENT && (
-                <linearGradient id="popupGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor={strokeConfig.gradientStart} stopOpacity={1} />
-                  <stop offset="100%" stopColor={strokeConfig.gradientEnd} stopOpacity={1} />
+                <linearGradient
+                  id="popupGradient"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="0%"
+                >
+                  <stop
+                    offset="0%"
+                    stopColor={strokeConfig.gradientStart}
+                    stopOpacity={1}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={strokeConfig.gradientEnd}
+                    stopOpacity={1}
+                  />
                 </linearGradient>
               )}
             </defs>
-            
+
             <path
               d={signaturePath}
               stroke={
@@ -164,11 +185,11 @@ export const ClaimPopup = ({
             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-150 flex items-center justify-center gap-2"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
             </svg>
             Tweet
           </button>
-          
+
           <button
             onClick={onClose}
             className="w-full bg-neutral-700 hover:bg-neutral-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-150"

@@ -1,31 +1,31 @@
-import { supabase } from '@/lib/supabase';
-import { ImageResponse } from '@vercel/og';
-import { NextRequest } from 'next/server';
+import { supabase } from "@/lib/supabase";
+import { ImageResponse } from "@vercel/og";
+import { NextRequest } from "next/server";
 
-export const runtime = 'edge';
+export const runtime = "edge";
 
 export default async function handler(req: NextRequest) {
   const url = new URL(req.url);
-  const name = url.pathname.split('/').pop();
+  const name = url.pathname.split("/").pop();
 
-  if (!name || typeof name !== 'string') {
-    return new Response(JSON.stringify({ error: 'Invalid signature name' }), {
+  if (!name || typeof name !== "string") {
+    return new Response(JSON.stringify({ error: "Invalid signature name" }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   }
 
   try {
     const { data: signature, error } = await supabase
-      .from('claimed_signatures')
-      .select('*')
-      .eq('name', name.toUpperCase())
-      .single();
+      .from("claimed_signatures")
+      .select("*")
+      .eq("name", name.toUpperCase())
+      .maybeSingle();
 
     if (error || !signature) {
-      return new Response(JSON.stringify({ error: 'Signature not found' }), {
+      return new Response(JSON.stringify({ error: "Signature not found" }), {
         status: 404,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
       });
     }
 
@@ -37,30 +37,42 @@ export default async function handler(req: NextRequest) {
           style={{
             width: 650,
             height,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: '#000000',
-            position: 'relative',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "#000000",
+            position: "relative",
           }}
         >
-          <svg 
-            width="650" 
-            height={height.toString()} 
+          <svg
+            width="650"
+            height={height.toString()}
             xmlns="http://www.w3.org/2000/svg"
           >
-            <rect width="650" height={height.toString()} fill="#000000"/>
-            {signature.stroke_config.style === 'gradient' && (
+            <rect width="650" height={height.toString()} fill="#000000" />
+            {signature.stroke_config.style === "gradient" && (
               <defs>
                 <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor={signature.stroke_config.gradientStart} stopOpacity={1} />
-                  <stop offset="100%" stopColor={signature.stroke_config.gradientEnd} stopOpacity={1} />
+                  <stop
+                    offset="0%"
+                    stopColor={signature.stroke_config.gradientStart}
+                    stopOpacity={1}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={signature.stroke_config.gradientEnd}
+                    stopOpacity={1}
+                  />
                 </linearGradient>
               </defs>
             )}
             <path
               d={signature.signature_path}
-              stroke={signature.stroke_config.style === 'solid' ? signature.stroke_config.color : 'url(#gradient)'}
+              stroke={
+                signature.stroke_config.style === "solid"
+                  ? signature.stroke_config.color
+                  : "url(#gradient)"
+              }
               strokeWidth={signature.stroke_config.width}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -72,14 +84,13 @@ export default async function handler(req: NextRequest) {
       {
         width: 650,
         height,
-      }
+      },
     );
-
   } catch (error) {
-    console.error('Error generating signature image:', error);
-    return new Response(JSON.stringify({ error: 'Failed to generate image' }), {
+    console.error("Error generating signature image:", error);
+    return new Response(JSON.stringify({ error: "Failed to generate image" }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   }
 }
