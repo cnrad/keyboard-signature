@@ -96,7 +96,7 @@ export const KeyboardSignature = () => {
     };
     
     checkIfClaimed();
-  }, [name, getSignatureByName]);
+  }, [name]);
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -105,7 +105,7 @@ export const KeyboardSignature = () => {
     } else {
       setSearchResults([]);
     }
-  }, [searchQuery, searchSignatures]);
+  }, [searchQuery]);
 
   useEffect(() => {
     if (name.length > 0) {
