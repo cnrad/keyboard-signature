@@ -18,6 +18,7 @@ export const KeyboardSignature = () => {
   const [curveType, setCurveType] = useState<CurveType>("linear");
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [includeNumbers, setIncludeNumbers] = useState(false);
+  const [capsHighlight, setCapsHighlight] = useState(false);
   const [strokeConfig, setStrokeConfig] = useState<StrokeConfig>({
     style: StrokeStyle.SOLID,
     color: "#ffffff",
@@ -31,6 +32,7 @@ export const KeyboardSignature = () => {
     setCurrentKeyboardLayout(KeyboardLayout.QWERTY);
     setCurveType("linear");
     setIncludeNumbers(false);
+    setCapsHighlight(false);
     setStrokeConfig({
       style: StrokeStyle.SOLID,
       color: "#ffffff",
@@ -110,6 +112,92 @@ export const KeyboardSignature = () => {
         .filter((char) => char in currentLayout),
     );
   }, [name, currentKeyboardLayout, includeNumbers]);
+
+  // Generate path segments for caps highlight
+  const pathSegments = useMemo(() => {
+    if (!capsHighlight || !name) return { segments: [{ path: signaturePath, isHighlighted: false }] };
+
+    const points = [];
+    const currentLayout = getKeyboardLayout(currentKeyboardLayout, includeNumbers);
+    const chars = name.split("");
+
+    // Build points array with character indices
+    for (let i = 0; i < chars.length; i++) {
+      const char = chars[i].toUpperCase();
+      if (char in currentLayout) {
+        const { x, y } = currentLayout[char];
+        const yOffset = includeNumbers ? 100 : 40;
+        points.push({
+          x: x * 60 + 28,
+          y: y * 60 + yOffset,
+          charIndex: i
+        });
+      }
+    }
+
+    if (points.length === 0) return { segments: [] };
+
+    // Find caps highlight ranges
+    const highlightRanges = [];
+    for (let i = 0; i < chars.length; i++) {
+      const char = chars[i];
+      if (char === char.toUpperCase() && char !== char.toLowerCase()) {
+        for (let j = i + 1; j < chars.length; j++) {
+          const nextChar = chars[j];
+          if (nextChar.match(/[a-zA-Z]/)) {
+            highlightRanges.push({ start: i, end: j });
+            break;
+          }
+        }
+      }
+    }
+
+    // If no highlight ranges, return normal path
+    if (highlightRanges.length === 0) {
+      return { segments: [{ path: signaturePath, isHighlighted: false }] };
+    }
+
+    // Create segments with proper connections
+    const segments = [];
+    let currentIndex = 0;
+
+    highlightRanges.forEach((range, rangeIndex) => {
+      // Add normal segment before this highlight range (if any)
+      if (currentIndex < range.start) {
+        const normalPoints = points.filter(p => p.charIndex >= currentIndex && p.charIndex <= range.start);
+        if (normalPoints.length > 1) {
+          segments.push({
+            path: generatePath(normalPoints, curveType),
+            isHighlighted: false
+          });
+        }
+      }
+
+      // Add highlight segment
+      const highlightPoints = points.filter(p => p.charIndex >= range.start && p.charIndex <= range.end);
+      if (highlightPoints.length > 1) {
+        segments.push({
+          path: generatePath(highlightPoints, curveType),
+          isHighlighted: true
+        });
+      }
+
+      currentIndex = range.end;
+
+      // Add normal segment after last highlight range
+      if (rangeIndex === highlightRanges.length - 1) {
+        const finalPoints = points.filter(p => p.charIndex >= range.end);
+        if (finalPoints.length > 1) {
+          segments.push({
+            path: generatePath(finalPoints, curveType),
+            isHighlighted: false
+          });
+        }
+      }
+    });
+
+    return { segments };
+  }, [name, capsHighlight, currentKeyboardLayout, curveType, includeNumbers, signaturePath]);
 
   // Export functions
   const exportSVG = () => {
@@ -216,13 +304,12 @@ export const KeyboardSignature = () => {
       <div className="relative mb-4 mt-8 max-sm:mt-0 max-sm:scale-70 max-sm:-ml-22">
         {/* Keyboard */}
         <div
-          className={`relative transition-opacity ease-out ${
-            name.length === 0
-              ? "opacity-100"
-              : keyboardVisible
-                ? "opacity-100 brightness-125 duration-50"
-                : "opacity-0 duration-4000"
-          }`}
+          className={`relative transition-opacity ease-out ${name.length === 0
+            ? "opacity-100"
+            : keyboardVisible
+              ? "opacity-100 brightness-125 duration-50"
+              : "opacity-0 duration-4000"
+            }`}
           style={{ width: "650px", height: includeNumbers ? "260px" : "200px" }}
         >
           {Object.entries(
@@ -236,13 +323,12 @@ export const KeyboardSignature = () => {
               <div
                 key={char}
                 onClick={() => setName((p) => p + char)}
-                className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${
-                  isCurrentKey
-                    ? "bg-white/50 border-neutral-400 text-black scale-110"
-                    : isActive
-                      ? "bg-neutral-900 border-neutral-800 text-white"
-                      : "bg-transparent border-neutral-800/50 text-neutral-300"
-                }`}
+                className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${isCurrentKey
+                  ? "bg-white/50 border-neutral-400 text-black scale-110"
+                  : isActive
+                    ? "bg-neutral-900 border-neutral-800 text-white"
+                    : "bg-transparent border-neutral-800/50 text-neutral-300"
+                  }`}
                 style={{
                   left: `${pos.x * 60}px`,
                   top: `${pos.y * 60 + (includeNumbers ? 75 : 15)}px`,
@@ -264,7 +350,14 @@ export const KeyboardSignature = () => {
           {/* defs for defining the SVG gradients */}
           <defs>
             {strokeConfig.style === StrokeStyle.GRADIENT && (
-              <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <linearGradient
+                id="pathGradient"
+                x1="0"
+                y1="0"
+                x2="650"
+                y2="0"
+                gradientUnits="userSpaceOnUse"
+              >
                 <stop offset="0%" stopColor={strokeConfig.gradientStart} stopOpacity={1} />
                 <stop offset="100%" stopColor={strokeConfig.gradientEnd} stopOpacity={1} />
               </linearGradient>
@@ -276,9 +369,10 @@ export const KeyboardSignature = () => {
             letters on the keyboard.
           </title>
 
-          {signaturePath ? (
+          {pathSegments.segments.map((segment, index) => (
             <path
-              d={signaturePath}
+              key={index}
+              d={segment.path}
               stroke={
                 strokeConfig.style === StrokeStyle.SOLID
                   ? strokeConfig.color
@@ -288,8 +382,9 @@ export const KeyboardSignature = () => {
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
+              opacity={segment.isHighlighted ? 0.5 : 1}
             />
-          ) : null}
+          ))}
         </svg>
       </div>
 
@@ -389,11 +484,10 @@ export const KeyboardSignature = () => {
                   <button
                     key={type}
                     onClick={() => setCurveType(type)}
-                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${
-                      curveType === type
-                        ? "bg-white text-black font-medium border-white"
-                        : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
-                    }`}
+                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${curveType === type
+                      ? "bg-white text-black font-medium border-white"
+                      : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
+                      }`}
                   >
                     {type.replace("-", " ")}
                   </button>
@@ -416,6 +510,26 @@ export const KeyboardSignature = () => {
                 >
                   <div
                     className={`absolute top-0.5 left-0.5 w-4 h-4 bg-black rounded-full transition-transform duration-200 ${includeNumbers ? "translate-x-5" : "translate-x-0"}`}
+                  />
+                </div>
+              </label>
+
+              {/* Caps Highlight Toggle */}
+              <p className="text-neutral-300 text-sm font-medium mr-8">
+                Caps Highlight
+              </p>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={capsHighlight}
+                  onChange={(e) => setCapsHighlight(e.target.checked)}
+                  className="sr-only"
+                />
+                <div
+                  className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${capsHighlight ? "bg-white" : "bg-neutral-700"}`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-black rounded-full transition-transform duration-200 ${capsHighlight ? "translate-x-5" : "translate-x-0"}`}
                   />
                 </div>
               </label>
