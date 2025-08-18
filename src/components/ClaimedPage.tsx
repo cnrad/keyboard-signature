@@ -8,7 +8,7 @@ interface ClaimedPageProps {
 
 export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
   const { getUserClaimedSignatures } = useSignatures();
-  
+
   const userClaimedSignatures = user ? getUserClaimedSignatures(user.id) : [];
 
   const downloadSignature = (signature: ClaimedSignature) => {
@@ -26,9 +26,9 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    if (signature.stroke_config.style === 'solid') {
+    if (signature.stroke_config.style === "solid") {
       ctx.strokeStyle = signature.stroke_config.color;
-    } else if (signature.stroke_config.style === 'gradient') {
+    } else if (signature.stroke_config.style === "gradient") {
       const gradient = ctx.createLinearGradient(0, 0, 650, 0);
       gradient.addColorStop(0, signature.stroke_config.gradientStart);
       gradient.addColorStop(1, signature.stroke_config.gradientEnd);
@@ -55,7 +55,7 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.3, ease: [0.6, 1, 0.26, 1] }}
-      className="w-full max-w-4xl mx-auto p-6"
+      className="w-full max-w-4xl mx-auto p-6 flex flex-col justify-start h-full"
     >
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
@@ -64,13 +64,13 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
             className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors duration-150"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.42-1.41L7.83 13H20v-2z"/>
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.42-1.41L7.83 13H20v-2z" />
             </svg>
             Back
           </button>
           <h1 className="text-2xl font-bold text-white">Claimed Signatures</h1>
         </div>
-        
+
         {user && (
           <div className="flex items-center gap-3">
             <img
@@ -96,18 +96,41 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="bg-black rounded-lg p-4 w-40 h-20 flex items-center justify-center">
-                    <svg width="600" height="200" viewBox="0 0 600 200" className="w-full h-full">
+                    <svg
+                      width="600"
+                      height="200"
+                      viewBox="0 0 600 200"
+                      className="w-full h-full"
+                    >
                       <defs>
-                        {signature.stroke_config.style === 'gradient' && (
-                          <linearGradient id={`gradient-${signature.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor={signature.stroke_config.gradientStart} stopOpacity={1} />
-                            <stop offset="100%" stopColor={signature.stroke_config.gradientEnd} stopOpacity={1} />
+                        {signature.stroke_config.style === "gradient" && (
+                          <linearGradient
+                            id={`gradient-${signature.id}`}
+                            x1="0%"
+                            y1="0%"
+                            x2="100%"
+                            y2="0%"
+                          >
+                            <stop
+                              offset="0%"
+                              stopColor={signature.stroke_config.gradientStart}
+                              stopOpacity={1}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor={signature.stroke_config.gradientEnd}
+                              stopOpacity={1}
+                            />
                           </linearGradient>
                         )}
                       </defs>
                       <path
                         d={signature.signature_path}
-                        stroke={signature.stroke_config.style === 'solid' ? signature.stroke_config.color : `url(#gradient-${signature.id})`}
+                        stroke={
+                          signature.stroke_config.style === "solid"
+                            ? signature.stroke_config.color
+                            : `url(#gradient-${signature.id})`
+                        }
                         strokeWidth={signature.stroke_config.width}
                         fill="none"
                         strokeLinecap="round"
@@ -115,19 +138,20 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
                       />
                     </svg>
                   </div>
-                  
+
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-1">
                       {signature.name}
                     </h3>
                     <p className="text-sm text-neutral-400">
-                      Claimed on {new Date(signature.created_at).toLocaleDateString()}
+                      Claimed on{" "}
+                      {new Date(signature.created_at).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
-                  <button 
+                  <button
                     onClick={() => downloadSignature(signature)}
                     className="bg-white text-black px-4 py-2 rounded-md text-sm font-medium hover:brightness-85 transition-all duration-150"
                   >
@@ -144,8 +168,12 @@ export const ClaimedPage = ({ onBack, user }: ClaimedPageProps) => {
             transition={{ duration: 0.3, delay: 0.2 }}
             className="text-center py-12"
           >
-            <h3 className="text-lg font-medium text-white mb-2">No claimed signatures</h3>
-            <p className="text-neutral-400">Start creating signatures and claim them to see them here.</p>
+            <h3 className="text-lg font-medium text-white mb-2">
+              No claimed signatures
+            </h3>
+            <p className="text-neutral-400">
+              Start creating signatures and claim them to see them here.
+            </p>
           </motion.div>
         )}
       </div>
