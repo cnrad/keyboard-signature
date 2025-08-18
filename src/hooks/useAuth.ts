@@ -44,9 +44,9 @@ export const useAuth = () => {
     const userMetadata = supabaseUser.user_metadata
     return {
       id: supabaseUser.id,
-      username: userMetadata.user_name || userMetadata.preferred_username || 'user',
-      profilePic: userMetadata.avatar_url || userMetadata.picture || '',
-      email: supabaseUser.email
+      username: userMetadata.user_name || userMetadata.preferred_username || userMetadata.screen_name || 'user',
+      profilePic: userMetadata.avatar_url || userMetadata.picture || userMetadata.profile_image_url || '',
+      email: supabaseUser.email || undefined
     }
   }
 
