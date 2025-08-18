@@ -205,7 +205,7 @@ export const KeyboardSignature = () => {
 
     const height = includeNumbers ? 260 : 200;
     const gradients = strokeConfig.style === StrokeStyle.GRADIENT
-      ? `<linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      ? `<linearGradient id="pathGradient" x1="0" y1="0" x2="650" y2="0" gradientUnits="userSpaceOnUse">
            <stop offset="0%" style="stop-color:${strokeConfig.gradientStart};stop-opacity:1" />
            <stop offset="100%" style="stop-color:${strokeConfig.gradientEnd};stop-opacity:1" />
          </linearGradient>`
@@ -215,9 +215,14 @@ export const KeyboardSignature = () => {
         ? strokeConfig.color
         : "url(#pathGradient)";
 
+    // Generate paths based on caps highlight setting
+    const pathElements = pathSegments.segments.map((segment, index) =>
+      `<path d="${segment.path}" stroke="${strokeColor}" stroke-width="${strokeConfig.width}" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="${segment.isHighlighted ? 0.5 : 1}"/>`
+    ).join('');
+
     const svgContent = `<svg width="650" height="${height}" xmlns="http://www.w3.org/2000/svg">
           <defs>${gradients}</defs>
-          <path d="${signaturePath}" stroke="${strokeColor}" stroke-width="${strokeConfig.width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          ${pathElements}
         </svg>`;
 
     const blob = new Blob([svgContent], { type: "image/svg+xml" });
@@ -251,18 +256,24 @@ export const KeyboardSignature = () => {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    // Set stroke style based on configuration
-    if (strokeConfig.style === StrokeStyle.SOLID) {
-      ctx.strokeStyle = strokeConfig.color;
-    } else if (strokeConfig.style === StrokeStyle.GRADIENT) {
-      const gradient = ctx.createLinearGradient(0, 0, 650, 0);
-      gradient.addColorStop(0, strokeConfig.gradientStart);
-      gradient.addColorStop(1, strokeConfig.gradientEnd);
-      ctx.strokeStyle = gradient;
-    }
+    // Draw each segment with appropriate opacity
+    pathSegments.segments.forEach((segment) => {
+      // Set stroke style and opacity for each segment
+      if (strokeConfig.style === StrokeStyle.SOLID) {
+        ctx.strokeStyle = strokeConfig.color;
+      } else if (strokeConfig.style === StrokeStyle.GRADIENT) {
+        const gradient = ctx.createLinearGradient(0, 0, 650, 0);
+        gradient.addColorStop(0, strokeConfig.gradientStart);
+        gradient.addColorStop(1, strokeConfig.gradientEnd);
+        ctx.strokeStyle = gradient;
+      }
 
-    const path = new Path2D(signaturePath);
-    ctx.stroke(path);
+      // Set opacity for highlighted segments
+      ctx.globalAlpha = segment.isHighlighted ? 0.5 : 1;
+
+      const path = new Path2D(segment.path);
+      ctx.stroke(path);
+    });
 
     canvas.toBlob((blob) => {
       if (!blob) return;
