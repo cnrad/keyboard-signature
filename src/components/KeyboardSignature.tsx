@@ -9,15 +9,33 @@ import {
 } from "@/util/constants";
 import { AnimatePresence, motion } from "motion/react";
 import { ColorPicker } from "@/components/ColorPicker";
+import { ClaimedPage } from "@/components/ClaimedPage";
+import { ClaimPopup } from "@/components/ClaimPopup";
+import { SignatureDetailModal } from "@/components/SignatureDetailModal";
+import type { ClaimedSignature } from "@/hooks/useSignatures";
+import { useAuth } from "@/hooks/useAuth";
+import { useSignatures } from "@/hooks/useSignatures";
 
 export const KeyboardSignature = () => {
   const [name, setName] = useState("");
-  const [currentKeyboardLayout, setCurrentKeyboardLayout] =
-    useState<KeyboardLayout>(KeyboardLayout.QWERTY);
+  const [currentKeyboardLayout, setCurrentKeyboardLayout] = useState<KeyboardLayout>(KeyboardLayout.QWERTY);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [curveType, setCurveType] = useState<CurveType>("linear");
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [includeNumbers, setIncludeNumbers] = useState(false);
+  const [claimedBy, setClaimedBy] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showClaimedPage, setShowClaimedPage] = useState(false);
+  const [showClaimPopup, setShowClaimPopup] = useState(false);
+  const [showSearchInput, setShowSearchInput] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<ClaimedSignature[]>([]);
+  const [selectedSignature, setSelectedSignature] = useState<ClaimedSignature | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  const { user, signInWithTwitter, signOut } = useAuth();
+  const { getSignatureByName, claimSignature, searchSignatures } = useSignatures();
   const [strokeConfig, setStrokeConfig] = useState<StrokeConfig>({
     style: StrokeStyle.SOLID,
     color: "#ffffff",
@@ -26,27 +44,28 @@ export const KeyboardSignature = () => {
     width: 3,
   });
 
-  // Reset to defaults function
+  const inputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const resetToDefaults = () => {
     setCurrentKeyboardLayout(KeyboardLayout.QWERTY);
     setCurveType("linear");
     setIncludeNumbers(false);
     setStrokeConfig({
       style: StrokeStyle.SOLID,
-      color: "#ffffff",
+      color: "#ffffff", 
       gradientStart: "#ff6b6b",
       gradientEnd: "#4ecdc4",
       width: 3,
     });
   };
-
-  // Focus on input when user types
-  const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isInputFocused = document.activeElement === inputRef.current;
+      const isMainInputFocused = document.activeElement === inputRef.current;
+      const isSearchInputFocused = document.activeElement === searchInputRef.current;
+      const isAnyInputFocused = document.activeElement?.tagName === 'INPUT';
 
-      if (!isInputFocused) {
+      if (!isMainInputFocused && !isSearchInputFocused && !isAnyInputFocused) {
         const regex = includeNumbers ? /^[a-zA-Z0-9]$/ : /^[a-zA-Z]$/;
         if (regex.test(e.key) || e.key === "Backspace") {
           inputRef.current?.focus();
@@ -58,30 +77,51 @@ export const KeyboardSignature = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [includeNumbers]);
 
-  // Flash keyboard when name changes
+  useEffect(() => {
+    if (!name) {
+      setClaimedBy(null);
+      setClaimError(null);
+      return;
+    }
+    
+    const checkIfClaimed = async () => {
+      const existingClaim = await getSignatureByName(name);
+      if (existingClaim) {
+        setClaimedBy(existingClaim.claimed_by_username);
+        setClaimError(null);
+      } else {
+        setClaimedBy(null);
+        setClaimError(null);
+      }
+    };
+    
+    checkIfClaimed();
+  }, [name]);
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const results = searchSignatures(searchQuery);
+      setSearchResults(results.slice(0, 4));
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchQuery]);
+
   useEffect(() => {
     if (name.length > 1) {
       setKeyboardVisible(true);
-
-      const timer = setTimeout(() => {
-        setKeyboardVisible(false);
-      }, 100);
-
+      const timer = setTimeout(() => setKeyboardVisible(false), 100);
       return () => clearTimeout(timer);
     } else {
       setKeyboardVisible(false);
     }
   }, [name, currentKeyboardLayout, includeNumbers]);
 
-  // Calculate signature path
   const signaturePath = useMemo(() => {
     if (!name) return "";
 
     const points = [];
-    const currentLayout = getKeyboardLayout(
-      currentKeyboardLayout,
-      includeNumbers,
-    );
+    const currentLayout = getKeyboardLayout(currentKeyboardLayout, includeNumbers);
 
     for (const char of name.toUpperCase()) {
       if (char in currentLayout) {
@@ -92,24 +132,70 @@ export const KeyboardSignature = () => {
     }
 
     if (points.length === 0) return "";
-
-    // SVG path
     return generatePath(points, curveType);
   }, [name, currentKeyboardLayout, curveType, includeNumbers]);
 
-  // Get active keys for highlighting
   const activeKeys = useMemo(() => {
-    const currentLayout = getKeyboardLayout(
-      currentKeyboardLayout,
-      includeNumbers,
-    );
+    const currentLayout = getKeyboardLayout(currentKeyboardLayout, includeNumbers);
     return new Set(
-      name
-        .toUpperCase()
-        .split("")
-        .filter((char) => char in currentLayout),
+      name.toUpperCase().split("").filter((char) => char in currentLayout)
     );
   }, [name, currentKeyboardLayout, includeNumbers]);
+
+  const handleLogin = async () => {
+    await signInWithTwitter();
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    setDropdownOpen(false);
+  };
+
+  const handleClaim = async () => {
+    
+    if (!user || !name || !signaturePath) {
+      return;
+    }
+    
+    const existingClaim = await getSignatureByName(name);
+    
+    if (existingClaim) {
+      setClaimedBy(existingClaim.claimed_by_username);
+      setClaimError(`Signature already claimed by @${existingClaim.claimed_by_username}`);
+      return;
+    }
+    
+    setClaimError(null);
+    
+    // Actually claim the signature
+    const result = await claimSignature(
+      name,
+      signaturePath,
+      strokeConfig,
+      includeNumbers,
+      user.id,
+      user.username,
+      user.profilePic
+    );
+    
+    
+    if (result.success) {
+      setClaimedBy(user.username);
+      setShowClaimPopup(true); // Show success popup
+    } else if (result.error === 'signature_already_claimed') {
+      setClaimedBy(result.claimedBy!);
+      setClaimError(`Already claimed by @${result.claimedBy}`);
+    } else if (result.error === 'user_already_claimed') {
+      setClaimError(`You already claimed "${result.claimedSignature}". Only 1 signature per account.`);
+    } else {
+      setClaimError('Failed to claim signature. Please try again.');
+    }
+  };
+
+
+  const handleTwitterRedirect = (username: string) => {
+    window.open(`https://twitter.com/${username}`, '_blank');
+  };
 
   // Export functions
   const exportSVG = () => {
@@ -187,22 +273,218 @@ export const KeyboardSignature = () => {
     });
   };
 
+  if (showClaimedPage) {
+    return (
+      <ClaimedPage 
+        onBack={() => setShowClaimedPage(false)} 
+        user={user} 
+      />
+    );
+  }
+
   return (
-    <div
-      className={`flex flex-col sm:items-center sm:justify-center max-sm:mx-auto max-sm:w-[28rem] sm:w-fit`}
-    >
-      <a
-        className="absolute cursor-pointer left-1/2 bottom-8 -translate-x-1/2 opacity-50 hover:opacity-100 text-sm flex flex-col items-center transition-all duration-150 ease-out text-center"
-        href="https://axiom.trade/meme/3URGpspzJUT7d3LN1kfbjm6koy5fNQTgQqDY8Zh1rZ8H"
-        rel="noreferrer noopener"
-        target="_blank"
-      >
-        <p className="font-bold text-white text-base">$SIGN</p>
-        <p className=" text-neutral-300 max-sm:break-all">
-          <span className="text-neutral-400 font-bold">CA:</span>{" "}
-          GjbLHUmyUo6JFczvaTbsj9p1LjsXmvR8Vk9gRPNLBAGS
-        </p>
-      </a>
+    <div className="flex flex-col sm:items-center sm:justify-center max-sm:mx-auto max-sm:w-[28rem] sm:w-fit">
+      <div className="absolute top-4 left-4 z-20">
+        <div className="relative">
+          <motion.div
+            animate={{ 
+              width: showSearchInput ? 200 : 42,
+              transition: { duration: 0.3, ease: [0.6, 1, 0.26, 1] }
+            }}
+            className="flex items-center bg-neutral-900/50 border border-neutral-700/50 rounded-lg overflow-hidden"
+          >
+            <button
+              onClick={() => setShowSearchInput(true)}
+              className="p-2 text-neutral-400 hover:text-white transition-colors duration-150 flex-shrink-0 flex items-center justify-center"
+              title="Search claimed signatures"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+            </button>
+            
+            <AnimatePresence>
+              {showSearchInput && (
+                <motion.input
+                  ref={searchInputRef}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2, delay: 0.1 }}
+                  autoFocus
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onBlur={(e) => {
+                    // Don't close if clicking on a result
+                    if (!e.relatedTarget?.closest('.search-results')) {
+                      setTimeout(() => {
+                        if (!searchQuery) {
+                          setShowSearchInput(false);
+                        }
+                      }, 150);
+                    }
+                  }}
+                  placeholder="Search signatures..."
+                  className="bg-transparent text-white placeholder-neutral-500 px-0 py-2 text-sm outline-none flex-1 min-w-0"
+                />
+              )}
+            </AnimatePresence>
+            
+            {searchQuery && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSearchQuery("");
+                  setShowSearchInput(false);
+                }}
+                className="p-1 mr-2 text-neutral-400 hover:text-white transition-colors flex-shrink-0"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+              </motion.button>
+            )}
+          </motion.div>
+          
+          <AnimatePresence>
+            {(searchResults.length > 0 || searchQuery.trim()) && showSearchInput && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="search-results absolute top-full left-0 mt-2 w-80 max-w-[90vw] sm:w-96 z-30"
+              >
+                {searchResults.length > 0 ? (
+                  <div className="py-2">
+                    {searchResults.map((signature) => (
+                      <div
+                        key={signature.id}
+                        onClick={() => {
+                          setSelectedSignature(signature);
+                          setShowSearchInput(false);
+                          setSearchQuery("");
+                        }}
+                        className="px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700/50 rounded-lg mb-2 hover:bg-neutral-800/90 cursor-pointer transition-colors duration-150"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="bg-black rounded p-2 w-12 h-6 flex items-center justify-center flex-shrink-0">
+                            <svg width="48" height="20" viewBox="0 0 600 200" className="w-full h-full">
+                              <defs>
+                                {signature.stroke_config.style === 'gradient' && (
+                                  <linearGradient id={`search-gradient-${signature.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stopColor={signature.stroke_config.gradientStart} stopOpacity={1} />
+                                    <stop offset="100%" stopColor={signature.stroke_config.gradientEnd} stopOpacity={1} />
+                                  </linearGradient>
+                                )}
+                              </defs>
+                              <path
+                                d={signature.signature_path}
+                                stroke={signature.stroke_config.style === 'solid' ? signature.stroke_config.color : `url(#search-gradient-${signature.id})`}
+                                strokeWidth={signature.stroke_config.width}
+                                fill="none"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-white text-sm truncate">
+                              {signature.name}
+                            </h3>
+                            <p className="text-xs text-neutral-400 truncate">
+                              @{signature.claimed_by_username}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : searchQuery.trim() ? (
+                  <div className="px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700/50 rounded-lg text-center">
+                    <p className="text-neutral-400 text-sm">No signatures found for &quot;{searchQuery}&quot;</p>
+                  </div>
+                ) : (
+                  <div className="px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700/50 rounded-lg text-center">
+                    <p className="text-neutral-400 text-sm">Start typing to search signatures...</p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <div className="absolute top-4 right-4 z-20">
+        {!user ? (
+          <button
+            onClick={handleLogin}
+            className="bg-white text-black px-4 py-2 rounded-md text-sm font-semibold cursor-pointer hover:brightness-85 transition-all duration-100 ease-out"
+          >
+            Log in
+          </button>
+        ) : (
+          <div className="relative">
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center gap-2 bg-neutral-900 border border-neutral-700 px-3 py-2 rounded-md text-sm text-white hover:bg-neutral-800 transition-all duration-100 ease-out"
+            >
+              <img
+                src={user?.profilePic}
+                alt="Profile"
+                className="w-6 h-6 rounded-full"
+              />
+              <span>{user?.username}</span>
+            </button>
+            
+            <AnimatePresence>
+              {dropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: [0.6, 1, 0.26, 1] }}
+                  className="absolute right-0 top-full mt-2 bg-neutral-950 border border-neutral-700 rounded-md p-2 min-w-[120px] shadow-lg"
+                >
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      setShowClaimedPage(true);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm text-neutral-300 hover:text-white hover:bg-neutral-800 rounded transition-all duration-100"
+                  >
+                    Claimed
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-3 py-2 text-sm text-neutral-300 hover:text-white hover:bg-neutral-800 rounded transition-all duration-100"
+                  >
+                    Logout
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+
+      {/* One signature per account warning */}
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center gap-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg px-4 py-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-yellow-400">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+            <path d="M12 9v4"/>
+            <path d="m12 17.02.01-.02"/>
+          </svg>
+          <p className="text-sm text-yellow-200 font-medium">
+            You can only claim 1 signature per account
+          </p>
+        </div>
+      </div>
 
       <input
         autoFocus
@@ -214,7 +496,6 @@ export const KeyboardSignature = () => {
       />
 
       <div className="relative mb-4 mt-8 max-sm:mt-0 max-sm:scale-70 max-sm:-ml-22">
-        {/* Keyboard */}
         <div
           className={`relative transition-opacity ease-out ${
             name.length < 2
@@ -254,14 +535,12 @@ export const KeyboardSignature = () => {
           })}
         </div>
 
-        {/* Signature */}
         <svg
           className="pointer-events-none absolute top-0 left-0"
           width="650"
           height={includeNumbers ? "260" : "200"}
           style={{ zIndex: 10 }}
         >
-          {/* defs for defining the SVG gradients */}
           <defs>
             {strokeConfig.style === StrokeStyle.GRADIENT && (
               <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -270,11 +549,6 @@ export const KeyboardSignature = () => {
               </linearGradient>
             )}
           </defs>
-
-          <title>
-            A digital signature, created by connecting the points of typed
-            letters on the keyboard.
-          </title>
 
           {signaturePath ? (
             <path
@@ -314,15 +588,55 @@ export const KeyboardSignature = () => {
           </button>
         </div>
 
-        <a
-          href="https://github.com/cnrad/keyboard-signature"
-          target="_blank"
-          rel="noreferrer noopener"
-          className="font-medium text-neutral-500 border border-neutral-700/50 px-3.5 py-1.5 bg-neutral-900/50 text-sm rounded-md text-center active:scale-98 active:brightness-70 hover:brightness-85 transition-all duration-100 ease-out"
-        >
-          View on GitHub
-        </a>
+        <div className="grid grid-cols-2 gap-2">
+          <a
+            href="https://github.com/cnrad/keyboard-signature"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="font-medium text-neutral-500 border border-neutral-700/50 px-3.5 py-1.5 bg-neutral-900/50 text-sm rounded-md text-center active:scale-98 active:brightness-70 hover:brightness-85 transition-all duration-100 ease-out"
+          >
+            View on GitHub
+          </a>
+          
+          {claimedBy ? (
+            <div className="flex items-center justify-center gap-1 font-medium text-neutral-500 border border-neutral-700/50 px-3.5 py-1.5 bg-neutral-900/50 text-sm rounded-md">
+              <span className="text-xs">Claimed by</span>
+              <button
+                onClick={() => handleTwitterRedirect(claimedBy)}
+                className="text-blue-400 hover:text-blue-300 transition-colors duration-100 cursor-pointer"
+              >
+                @{claimedBy}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleClaim}
+              disabled={!user || !name || !!claimedBy}
+              className={`font-medium px-3.5 py-1.5 text-sm rounded-md text-center active:scale-98 transition-all duration-100 ease-out ${
+                !user || !name || !!claimedBy 
+                  ? "text-neutral-600 border border-neutral-800/50 bg-neutral-900/30 cursor-not-allowed"
+                  : "text-neutral-500 border border-neutral-700/50 bg-neutral-900/50 active:brightness-70 hover:brightness-85 cursor-pointer"
+              }`}
+            >
+              {!user ? "Login to Claim" : !name ? "Enter Name" : claimedBy ? "Already Claimed" : "Claim"}
+            </button>
+          )}
+        </div>
       </div>
+
+      <a
+        className="absolute cursor-pointer left-1/2 bottom-8 -translate-x-1/2 opacity-50 hover:opacity-100 text-sm flex flex-col items-center transition-all duration-150 ease-out text-center"
+        href="https://axiom.trade/meme/3URGpspzJUT7d3LN1kfbjm6koy5fNQTgQqDY8Zh1rZ8H"
+        rel="noreferrer noopener"
+        target="_blank"
+      >
+        <p className="font-bold text-white text-base">$SIGN</p>
+        <p className=" text-neutral-300 max-sm:break-all">
+          <span className="text-neutral-400 font-bold">CA:</span>{" "}
+          GjbLHUmyUo6JFczvaTbsj9p1LjsXmvR8Vk9gRPNLBAGS
+        </p>
+      </a>
 
       <AnimatePresence>
         {optionsOpen ? (
@@ -512,6 +826,26 @@ export const KeyboardSignature = () => {
           </motion.button>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showClaimPopup && (
+          <ClaimPopup
+            isOpen={showClaimPopup}
+            onClose={() => setShowClaimPopup(false)}
+            name={name}
+            signaturePath={signaturePath}
+            strokeConfig={strokeConfig}
+            includeNumbers={includeNumbers}
+            user={user}
+          />
+        )}
+      </AnimatePresence>
+
+      <SignatureDetailModal
+        signature={selectedSignature}
+        isOpen={!!selectedSignature}
+        onClose={() => setSelectedSignature(null)}
+      />
     </div>
   );
 };
