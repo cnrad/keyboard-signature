@@ -62,7 +62,7 @@ export const KeyboardSignature = () => {
 
   // Flash keyboard when name changes
   useEffect(() => {
-    if (name.length > 0) {
+    if (name.length > 1) {
       setKeyboardVisible(true);
 
       const timer = setTimeout(() => {
@@ -400,7 +400,7 @@ export const KeyboardSignature = () => {
       </div>
 
       <div
-        className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${name.length > 0 ? "opacity-100 translate-y-0 duration-1000" : "pointer-events-none opacity-0 translate-y-2 duration-150"}`}
+        className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${name.length > 1 ? "opacity-100 translate-y-0 duration-1000" : "pointer-events-none opacity-0 translate-y-2 duration-150"}`}
       >
         <div className="grid grid-cols-2 gap-2">
           <button
