@@ -31,6 +31,7 @@ export const KeyboardSignature = () => {
   const [curveType, setCurveType] = useState<CurveType>("linear");
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [includeNumbers, setIncludeNumbers] = useState(false);
+  const [capsHighlight, setCapsHighlight] = useState(false);
   const [claimedBy, setClaimedBy] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showClaimedPage, setShowClaimedPage] = useState(false);
@@ -52,6 +53,7 @@ export const KeyboardSignature = () => {
   const unclaimSignatureMutation = useUnclaimSignature();
   const { data: existingSignature } = useSignatureByName(debouncedName); // API call debounced
   const { searchResults } = useSearchSignatures(debouncedSearchQuery); // Search API debounced
+
   const [strokeConfig, setStrokeConfig] = useState<StrokeConfig>({
     style: StrokeStyle.SOLID,
     color: "#ffffff",
@@ -67,6 +69,7 @@ export const KeyboardSignature = () => {
     setCurrentKeyboardLayout(KeyboardLayout.QWERTY);
     setCurveType("linear");
     setIncludeNumbers(false);
+    setCapsHighlight(false);
     setStrokeConfig({
       style: StrokeStyle.SOLID,
       color: "#ffffff",
@@ -241,14 +244,99 @@ export const KeyboardSignature = () => {
     window.open(`https://twitter.com/${username}`, "_blank");
   };
 
+  // Generate path segments for caps highlight
+  const pathSegments = useMemo(() => {
+    if (!capsHighlight || !name) return { segments: [{ path: signaturePath, isHighlighted: false }] };
+
+    const points = [];
+    const currentLayout = getKeyboardLayout(currentKeyboardLayout, includeNumbers);
+    const chars = name.split("");
+
+    // Build points array with character indices
+    for (let i = 0; i < chars.length; i++) {
+      const char = chars[i].toUpperCase();
+      if (char in currentLayout) {
+        const { x, y } = currentLayout[char];
+        const yOffset = includeNumbers ? 100 : 40;
+        points.push({
+          x: x * 60 + 28,
+          y: y * 60 + yOffset,
+          charIndex: i
+        });
+      }
+    }
+
+    if (points.length === 0) return { segments: [] };
+
+    // Find caps highlight ranges
+    const highlightRanges = [];
+    for (let i = 0; i < chars.length; i++) {
+      const char = chars[i];
+      if (char === char.toUpperCase() && char !== char.toLowerCase()) {
+        for (let j = i + 1; j < chars.length; j++) {
+          const nextChar = chars[j];
+          if (nextChar.match(/[a-zA-Z]/)) {
+            highlightRanges.push({ start: i, end: j });
+            break;
+          }
+        }
+      }
+    }
+
+    // If no highlight ranges, return normal path
+    if (highlightRanges.length === 0) {
+      return { segments: [{ path: signaturePath, isHighlighted: false }] };
+    }
+
+    // Create segments with proper connections
+    const segments = [];
+    let currentIndex = 0;
+
+    highlightRanges.forEach((range, rangeIndex) => {
+      // Add normal segment before this highlight range (if any)
+      if (currentIndex < range.start) {
+        const normalPoints = points.filter(p => p.charIndex >= currentIndex && p.charIndex <= range.start);
+        if (normalPoints.length > 1) {
+          segments.push({
+            path: generatePath(normalPoints, curveType),
+            isHighlighted: false
+          });
+        }
+      }
+
+      // Add highlight segment
+      const highlightPoints = points.filter(p => p.charIndex >= range.start && p.charIndex <= range.end);
+      if (highlightPoints.length > 1) {
+        segments.push({
+          path: generatePath(highlightPoints, curveType),
+          isHighlighted: true
+        });
+      }
+
+      currentIndex = range.end;
+
+      // Add normal segment after last highlight range
+      if (rangeIndex === highlightRanges.length - 1) {
+        const finalPoints = points.filter(p => p.charIndex >= range.end);
+        if (finalPoints.length > 1) {
+          segments.push({
+            path: generatePath(finalPoints, curveType),
+            isHighlighted: false
+          });
+        }
+      }
+    });
+
+    return { segments };
+  }, [name, capsHighlight, currentKeyboardLayout, curveType, includeNumbers, signaturePath]);
+
   // Export functions
   const exportSVG = () => {
     if (!signaturePath || !name) return;
 
     const height = includeNumbers ? 260 : 200;
-    const gradients =
-      strokeConfig.style === StrokeStyle.GRADIENT
-        ? `<linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    const gradients = strokeConfig.style === StrokeStyle.GRADIENT
+      ? `<linearGradient id="pathGradient" x1="0" y1="0" x2="650" y2="0" gradientUnits="userSpaceOnUse">
            <stop offset="0%" style="stop-color:${strokeConfig.gradientStart};stop-opacity:1" />
            <stop offset="100%" style="stop-color:${strokeConfig.gradientEnd};stop-opacity:1" />
          </linearGradient>`
@@ -258,9 +346,14 @@ export const KeyboardSignature = () => {
         ? strokeConfig.color
         : "url(#pathGradient)";
 
+    // Generate paths based on caps highlight setting
+    const pathElements = pathSegments.segments.map((segment, index) =>
+      `<path d="${segment.path}" stroke="${strokeColor}" stroke-width="${strokeConfig.width}" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="${segment.isHighlighted ? 0.5 : 1}"/>`
+    ).join('');
+
     const svgContent = `<svg width="650" height="${height}" xmlns="http://www.w3.org/2000/svg">
           <defs>${gradients}</defs>
-          <path d="${signaturePath}" stroke="${strokeColor}" stroke-width="${strokeConfig.width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          ${pathElements}
         </svg>`;
 
     const blob = new Blob([svgContent], { type: "image/svg+xml" });
@@ -294,18 +387,24 @@ export const KeyboardSignature = () => {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    // Set stroke style based on configuration
-    if (strokeConfig.style === StrokeStyle.SOLID) {
-      ctx.strokeStyle = strokeConfig.color;
-    } else if (strokeConfig.style === StrokeStyle.GRADIENT) {
-      const gradient = ctx.createLinearGradient(0, 0, 650, 0);
-      gradient.addColorStop(0, strokeConfig.gradientStart);
-      gradient.addColorStop(1, strokeConfig.gradientEnd);
-      ctx.strokeStyle = gradient;
-    }
+    // Draw each segment with appropriate opacity
+    pathSegments.segments.forEach((segment) => {
+      // Set stroke style and opacity for each segment
+      if (strokeConfig.style === StrokeStyle.SOLID) {
+        ctx.strokeStyle = strokeConfig.color;
+      } else if (strokeConfig.style === StrokeStyle.GRADIENT) {
+        const gradient = ctx.createLinearGradient(0, 0, 650, 0);
+        gradient.addColorStop(0, strokeConfig.gradientStart);
+        gradient.addColorStop(1, strokeConfig.gradientEnd);
+        ctx.strokeStyle = gradient;
+      }
 
-    const path = new Path2D(signaturePath);
-    ctx.stroke(path);
+      // Set opacity for highlighted segments
+      ctx.globalAlpha = segment.isHighlighted ? 0.5 : 1;
+
+      const path = new Path2D(segment.path);
+      ctx.stroke(path);
+    });
 
     canvas.toBlob((blob) => {
       if (!blob) return;
@@ -596,13 +695,12 @@ export const KeyboardSignature = () => {
 
       <div className="relative mb-4 mt-8 max-sm:mt-0 max-sm:scale-70 max-sm:-ml-22">
         <div
-          className={`relative transition-opacity ease-out ${
-            name.length < 2
-              ? "opacity-100"
-              : keyboardVisible
-                ? "opacity-100 brightness-125 duration-50"
-                : "opacity-0 duration-4000"
-          }`}
+          className={`relative transition-opacity ease-out ${name.length === 0
+            ? "opacity-100"
+            : keyboardVisible
+              ? "opacity-100 brightness-125 duration-50"
+              : "opacity-0 duration-4000"
+            }`}
           style={{ width: "650px", height: includeNumbers ? "260px" : "200px" }}
         >
           {Object.entries(
@@ -616,13 +714,12 @@ export const KeyboardSignature = () => {
               <div
                 key={char}
                 onClick={() => setName((p) => p + char)}
-                className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${
-                  isCurrentKey
-                    ? "bg-white/50 border-neutral-400 text-black scale-110"
-                    : isActive
-                      ? "bg-neutral-900 border-neutral-800 text-white"
-                      : "bg-transparent border-neutral-800/50 text-neutral-300"
-                }`}
+                className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${isCurrentKey
+                  ? "bg-white/50 border-neutral-400 text-black scale-110"
+                  : isActive
+                    ? "bg-neutral-900 border-neutral-800 text-white"
+                    : "bg-transparent border-neutral-800/50 text-neutral-300"
+                  }`}
                 style={{
                   left: `${pos.x * 60}px`,
                   top: `${pos.y * 60 + (includeNumbers ? 75 : 15)}px`,
@@ -644,11 +741,14 @@ export const KeyboardSignature = () => {
             {strokeConfig.style === StrokeStyle.GRADIENT && (
               <linearGradient
                 id="pathGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
+                x1="0"
+                y1="0"
+                x2="650"
+                y2="0"
+                gradientUnits="userSpaceOnUse"
               >
+                <stop offset="0%" stopColor={strokeConfig.gradientStart} stopOpacity={1} />
+                <stop offset="100%" stopColor={strokeConfig.gradientEnd} stopOpacity={1} />
                 <stop
                   offset="0%"
                   stopColor={strokeConfig.gradientStart}
@@ -663,9 +763,15 @@ export const KeyboardSignature = () => {
             )}
           </defs>
 
-          {signaturePath ? (
+          <title>
+            A digital signature, created by connecting the points of typed
+            letters on the keyboard.
+          </title>
+
+          {pathSegments.segments.map((segment, index) => (
             <path
-              d={signaturePath}
+              key={index}
+              d={segment.path}
               stroke={
                 strokeConfig.style === StrokeStyle.SOLID
                   ? strokeConfig.color
@@ -675,8 +781,9 @@ export const KeyboardSignature = () => {
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
+              opacity={segment.isHighlighted ? 0.5 : 1}
             />
-          ) : null}
+          ))}
         </svg>
       </div>
 
@@ -827,11 +934,10 @@ export const KeyboardSignature = () => {
                   <button
                     key={type}
                     onClick={() => setCurveType(type)}
-                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${
-                      curveType === type
-                        ? "bg-white text-black font-medium border-white"
-                        : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
-                    }`}
+                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${curveType === type
+                      ? "bg-white text-black font-medium border-white"
+                      : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
+                      }`}
                   >
                     {type.replace("-", " ")}
                   </button>
@@ -854,6 +960,26 @@ export const KeyboardSignature = () => {
                 >
                   <div
                     className={`absolute top-0.5 left-0.5 w-4 h-4 bg-black rounded-full transition-transform duration-200 ${includeNumbers ? "translate-x-5" : "translate-x-0"}`}
+                  />
+                </div>
+              </label>
+
+              {/* Caps Highlight Toggle */}
+              <p className="text-neutral-300 text-sm font-medium mr-8">
+                Caps Highlight
+              </p>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={capsHighlight}
+                  onChange={(e) => setCapsHighlight(e.target.checked)}
+                  className="sr-only"
+                />
+                <div
+                  className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${capsHighlight ? "bg-white" : "bg-neutral-700"}`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-black rounded-full transition-transform duration-200 ${capsHighlight ? "translate-x-5" : "translate-x-0"}`}
                   />
                 </div>
               </label>
