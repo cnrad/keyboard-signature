@@ -260,6 +260,18 @@ export const getKeyboardLayout = (layout: KeyboardLayout, includeNumbers: boolea
   return includeNumbers ? { ...numberRow, ...baseLayout } : baseLayout;
 };
 
+export const getKeyboardLayoutWidth = (layout: KeyboardLayout): number => {
+  // Calculate the maximum x coordinate for the layout
+  const keys = keyboardLayouts[layout];
+  const maxX = Math.max(...Object.values(keys).map(key => key.x));
+  
+  // Standard width is 650px, but for wider layouts we need to accommodate all keys
+  // Each key position is 60px wide, plus margins
+  const requiredWidth = Math.max(650, (maxX + 1.5) * 60 + 56); // 56px for margins (28px on each side)
+  
+  return requiredWidth;
+};
+
 export type CurveType =
   | "linear"
   | "catmull-rom"

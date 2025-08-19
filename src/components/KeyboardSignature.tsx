@@ -6,6 +6,7 @@ import {
   getKeyboardLayout,
   StrokeStyle,
   StrokeConfig,
+  getKeyboardLayoutWidth,
 } from "@/util/constants";
 import { AnimatePresence, motion } from "motion/react";
 import { ColorPicker } from "@/components/ColorPicker";
@@ -228,7 +229,8 @@ export const KeyboardSignature = () => {
         ? strokeConfig.color
         : "url(#pathGradient)";
 
-    const svgContent = `<svg width="650" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    const width = getKeyboardLayoutWidth(currentKeyboardLayout);
+    const svgContent = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
           <defs>${gradients}</defs>
           <path d="${signaturePath}" stroke="${strokeColor}" stroke-width="${strokeConfig.width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>`;
@@ -246,8 +248,9 @@ export const KeyboardSignature = () => {
     if (!signaturePath || !name) return;
 
     const height = includeNumbers ? 260 : 200;
+    const width = getKeyboardLayoutWidth(currentKeyboardLayout);
     const canvas = document.createElement("canvas");
-    canvas.width = 1300;
+    canvas.width = width * 2;
     canvas.height = height * 2;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -257,7 +260,7 @@ export const KeyboardSignature = () => {
 
     // Background
     ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, 650, height);
+    ctx.fillRect(0, 0, width, height);
 
     // Configure stroke
     ctx.lineWidth = strokeConfig.width;
@@ -573,7 +576,10 @@ export const KeyboardSignature = () => {
                 ? "opacity-100 brightness-125 duration-50"
                 : "opacity-0 duration-4000"
           }`}
-          style={{ width: "650px", height: includeNumbers ? "260px" : "200px" }}
+          style={{ 
+            width: `${getKeyboardLayoutWidth(currentKeyboardLayout)}px`, 
+            height: includeNumbers ? "260px" : "200px" 
+          }}
         >
           {Object.entries(
             getKeyboardLayout(currentKeyboardLayout, includeNumbers),
@@ -606,7 +612,7 @@ export const KeyboardSignature = () => {
 
         <svg
           className="pointer-events-none absolute top-0 left-0"
-          width="650"
+          width={getKeyboardLayoutWidth(currentKeyboardLayout)}
           height={includeNumbers ? "260" : "200"}
           style={{ zIndex: 10 }}
         >
