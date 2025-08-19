@@ -18,6 +18,7 @@ import {
   useClaimSignature,
   useSignatureByName,
   useSearchSignatures,
+  useUnclaimSignature,
 } from "@/hooks/useSignaturesQuery";
 import { useDebounce } from "@/hooks/useDebounce";
 import { XIcon } from "./XIcon";
@@ -48,6 +49,7 @@ export const KeyboardSignature = () => {
 
   const { user, signInWithTwitter, signOut } = useAuth();
   const claimSignatureMutation = useClaimSignature();
+  const unclaimSignatureMutation = useUnclaimSignature();
   const { data: existingSignature } = useSignatureByName(debouncedName); // API call debounced
   const { searchResults } = useSearchSignatures(debouncedSearchQuery); // Search API debounced
   const [strokeConfig, setStrokeConfig] = useState<StrokeConfig>({
@@ -202,6 +204,34 @@ export const KeyboardSignature = () => {
         },
         onError: () => {
           setClaimError("Failed to claim signature. Please try again.");
+        },
+      },
+    );
+  };
+
+  const handleUnclaim = async () => {
+    if (!user || !existingSignature?.claimed_by_username) {
+      return;
+    }
+
+    setClaimError(null);
+
+    // Use React Query mutation to claim the signature
+    unclaimSignatureMutation.mutate(
+      {
+        name,
+        username: existingSignature.claimed_by_username,
+      },
+      {
+        onSuccess: (result) => {
+          if (result.success) {
+            setClaimedBy(null);
+          } else {
+            setClaimError("Failed to unclaim signature. Please try again.");
+          }
+        },
+        onError: () => {
+          setClaimError("Failed to unclaim signature. Please try again.");
         },
       },
     );
@@ -653,9 +683,16 @@ export const KeyboardSignature = () => {
       <div
         className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${name.length > 1 ? "opacity-100 translate-y-0 duration-1000" : "pointer-events-none opacity-0 translate-y-2 duration-150"}`}
       >
-        {claimedBy ? (
+        {existingSignature?.claimed_by_username === claimedBy ? (
+          <button
+            onClick={handleUnclaim}
+            className="flex items-center justify-center gap-1 font-medium text-red-500 border border-red-700/50 px-3.5 py-1.5 bg-red-900/25 text-sm rounded-md hover:bg-red-900/30 cursor-pointer transition-all duration-100 ease-out hover:text-red-400"
+          >
+            Unclaim
+          </button>
+        ) : claimedBy ? (
           <div className="flex items-center justify-center gap-1 font-medium text-neutral-500 border border-neutral-700/50 px-3.5 py-1.5 bg-neutral-900/50 text-sm rounded-md">
-            <span className="text-xs">Claimed by</span>
+            <span>Claimed by</span>
             <button
               onClick={() => handleTwitterRedirect(claimedBy)}
               className="text-blue-400 hover:text-blue-300 transition-colors duration-100 cursor-pointer"
