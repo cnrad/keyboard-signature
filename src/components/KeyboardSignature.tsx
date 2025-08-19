@@ -288,6 +288,13 @@ export const KeyboardSignature = () => {
 		});
 	};
 
+	const handleTwitterShare = async () => {
+		if (!name) return;
+		const tweetText = encodeURIComponent(`Check out my digital signature: ${name}\nCreated on signature.cnrad.dev`);
+		window.open(`https://twitter.com/intent/tweet?text=${tweetText}&hashtags=KeyboardArt`, '_blank');
+	};
+
+
 	if (showClaimedPage) {
 		return <ClaimedPage onBack={() => setShowClaimedPage(false)} user={user} />;
 	}
@@ -430,29 +437,29 @@ export const KeyboardSignature = () => {
 																<defs>
 																	{signature.stroke_config.style ===
 																		"gradient" && (
-																		<linearGradient
-																			id={`search-gradient-${signature.id}`}
-																			x1="0%"
-																			y1="0%"
-																			x2="100%"
-																			y2="0%"
-																		>
-																			<stop
-																				offset="0%"
-																				stopColor={
-																					signature.stroke_config.gradientStart
-																				}
-																				stopOpacity={1}
-																			/>
-																			<stop
-																				offset="100%"
-																				stopColor={
-																					signature.stroke_config.gradientEnd
-																				}
-																				stopOpacity={1}
-																			/>
-																		</linearGradient>
-																	)}
+																			<linearGradient
+																				id={`search-gradient-${signature.id}`}
+																				x1="0%"
+																				y1="0%"
+																				x2="100%"
+																				y2="0%"
+																			>
+																				<stop
+																					offset="0%"
+																					stopColor={
+																						signature.stroke_config.gradientStart
+																					}
+																					stopOpacity={1}
+																				/>
+																				<stop
+																					offset="100%"
+																					stopColor={
+																						signature.stroke_config.gradientEnd
+																					}
+																					stopOpacity={1}
+																				/>
+																			</linearGradient>
+																		)}
 																</defs>
 																<path
 																	d={signature.signature_path}
@@ -566,13 +573,12 @@ export const KeyboardSignature = () => {
 
 			<div className="relative mb-4 mt-8 max-sm:mt-0 max-sm:scale-70 max-sm:-ml-22">
 				<div
-					className={`relative transition-opacity ease-out ${
-						name.length < 2
+					className={`relative transition-opacity ease-out ${name.length < 2
 							? "opacity-100"
 							: keyboardVisible
 								? "opacity-100 brightness-125 duration-50"
 								: "opacity-0 duration-4000"
-					}`}
+						}`}
 					style={{ width: "650px", height: includeNumbers ? "260px" : "200px" }}
 				>
 					{Object.entries(
@@ -586,13 +592,12 @@ export const KeyboardSignature = () => {
 							<div
 								key={char}
 								onClick={() => setName((p) => p + char)}
-								className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${
-									isCurrentKey
+								className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${isCurrentKey
 										? "bg-white/50 border-neutral-400 text-black scale-110"
 										: isActive
 											? "bg-neutral-900 border-neutral-800 text-white"
 											: "bg-transparent border-neutral-800/50 text-neutral-300"
-								}`}
+									}`}
 								style={{
 									left: `${pos.x * 60}px`,
 									top: `${pos.y * 60 + (includeNumbers ? 75 : 15)}px`,
@@ -668,11 +673,10 @@ export const KeyboardSignature = () => {
 						type="button"
 						onClick={handleClaim}
 						disabled={!user || !name || !!claimedBy}
-						className={`font-medium px-3.5 py-1.5 text-sm rounded-md text-center active:scale-98 transition-all duration-100 ease-out ${
-							!user || !name || !!claimedBy
+						className={`font-medium px-3.5 py-1.5 text-sm rounded-md text-center active:scale-98 transition-all duration-100 ease-out ${!user || !name || !!claimedBy
 								? "text-neutral-600 border border-neutral-800/50 bg-neutral-900/30 cursor-not-allowed"
 								: "text-neutral-500 border border-neutral-700/50 bg-neutral-900/50 active:brightness-70 hover:brightness-85 cursor-pointer"
-						}`}
+							}`}
 					>
 						{!user
 							? "Login to Claim"
@@ -701,6 +705,14 @@ export const KeyboardSignature = () => {
 						Export PNG
 					</button>
 				</div>
+				<button
+					type="button"
+					onClick={handleTwitterShare}
+					disabled={!name}
+					className="bg-neutral-900/50 text-white border border-neutral-700/50 px-3.5 py-1.5 rounded-md text-sm font-semibold cursor-pointer active:scale-98 active:brightness-70 hover:brightness-85 transition-all duration-100 ease-out"
+				>
+					Share on X
+				</button>
 
 				<a
 					href="https://github.com/cnrad/keyboard-signature"
@@ -790,11 +802,10 @@ export const KeyboardSignature = () => {
 									<button
 										key={type}
 										onClick={() => setCurveType(type)}
-										className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${
-											curveType === type
+										className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${curveType === type
 												? "bg-white text-black font-medium border-white"
 												: "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
-										}`}
+											}`}
 									>
 										{type.replace("-", " ")}
 									</button>
@@ -832,11 +843,10 @@ export const KeyboardSignature = () => {
 										onClick={() =>
 											setStrokeConfig((prev) => ({ ...prev, style }))
 										}
-										className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${
-											strokeConfig.style === style
+										className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${strokeConfig.style === style
 												? "bg-white text-black font-medium border-white"
 												: "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
-										}`}
+											}`}
 									>
 										{style}
 									</button>
