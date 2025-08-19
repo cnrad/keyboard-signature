@@ -169,15 +169,15 @@ export const ClaimPopup = ({
           <button
             type="button"
             onClick={() => handleTweet(name)}
-            className="w-full bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-150 flex items-center justify-center gap-2"
+            className="w-full bg-neutral-950 border border-neutral-800 cursor-pointer hover:brightness-85 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-150 flex items-center justify-center gap-2"
           >
-            <XIcon />
+            <XIcon className="fill-white size-5" />
             Share
           </button>
 
           <button
             onClick={onClose}
-            className="w-full bg-neutral-700 hover:bg-neutral-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-150"
+            className="cursor-pointer w-full bg-neutral-700 hover:bg-neutral-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-150"
           >
             Close
           </button>
