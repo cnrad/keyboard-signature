@@ -9,6 +9,19 @@ import {
 } from "@/util/constants";
 import { AnimatePresence, motion } from "motion/react";
 import { ColorPicker } from "@/components/ColorPicker";
+import { ClaimedPage } from "@/components/ClaimedPage";
+import { ClaimPopup } from "@/components/ClaimPopup";
+import { SignatureDetailModal } from "@/components/SignatureDetailModal";
+import type { ClaimedSignature } from "@/hooks/useSignatures";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  useClaimSignature,
+  useSignatureByName,
+  useSearchSignatures,
+  useUnclaimSignature,
+} from "@/hooks/useSignaturesQuery";
+import { useDebounce } from "@/hooks/useDebounce";
+import { XIcon } from "./XIcon";
 
 export const KeyboardSignature = () => {
   const [name, setName] = useState("");
@@ -19,6 +32,28 @@ export const KeyboardSignature = () => {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [includeNumbers, setIncludeNumbers] = useState(false);
   const [capsHighlight, setCapsHighlight] = useState(false);
+  const [claimedBy, setClaimedBy] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showClaimedPage, setShowClaimedPage] = useState(false);
+  const [showClaimPopup, setShowClaimPopup] = useState(false);
+  const [showSearchInput, setShowSearchInput] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Debounce only the API requests, not signature generation
+  const debouncedName = useDebounce(name, 300); // 300ms delay for API calls only
+  const debouncedSearchQuery = useDebounce(searchQuery, 300); // 300ms delay for search
+
+  const [selectedSignature, setSelectedSignature] =
+    useState<ClaimedSignature | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  const { user, signInWithTwitter, signOut } = useAuth();
+  const claimSignatureMutation = useClaimSignature();
+  const unclaimSignatureMutation = useUnclaimSignature();
+  const { data: existingSignature } = useSignatureByName(debouncedName); // API call debounced
+  const { searchResults } = useSearchSignatures(debouncedSearchQuery); // Search API debounced
+
   const [strokeConfig, setStrokeConfig] = useState<StrokeConfig>({
     style: StrokeStyle.SOLID,
     color: "#ffffff",
@@ -27,7 +62,9 @@ export const KeyboardSignature = () => {
     width: 3,
   });
 
-  // Reset to defaults function
+  const inputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const resetToDefaults = () => {
     setCurrentKeyboardLayout(KeyboardLayout.QWERTY);
     setCurveType("linear");
@@ -41,14 +78,14 @@ export const KeyboardSignature = () => {
       width: 3,
     });
   };
-
-  // Focus on input when user types
-  const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isInputFocused = document.activeElement === inputRef.current;
+      const isMainInputFocused = document.activeElement === inputRef.current;
+      const isSearchInputFocused =
+        document.activeElement === searchInputRef.current;
+      const isAnyInputFocused = document.activeElement?.tagName === "INPUT";
 
-      if (!isInputFocused) {
+      if (!isMainInputFocused && !isSearchInputFocused && !isAnyInputFocused) {
         const regex = includeNumbers ? /^[a-zA-Z0-9]$/ : /^[a-zA-Z]$/;
         if (regex.test(e.key) || e.key === "Backspace") {
           inputRef.current?.focus();
@@ -60,24 +97,34 @@ export const KeyboardSignature = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [includeNumbers]);
 
-  // Flash keyboard when name changes
+  useEffect(() => {
+    if (!debouncedName) {
+      setClaimedBy(null);
+      setClaimError(null);
+      return;
+    }
+
+    if (existingSignature) {
+      setClaimedBy(existingSignature.claimed_by_username);
+      setClaimError(null);
+    } else {
+      setClaimedBy(null);
+      setClaimError(null);
+    }
+  }, [debouncedName, existingSignature]);
+
   useEffect(() => {
     if (name.length > 1) {
       setKeyboardVisible(true);
-
-      const timer = setTimeout(() => {
-        setKeyboardVisible(false);
-      }, 100);
-
+      const timer = setTimeout(() => setKeyboardVisible(false), 100);
       return () => clearTimeout(timer);
     } else {
       setKeyboardVisible(false);
     }
   }, [name, currentKeyboardLayout, includeNumbers]);
 
-  // Calculate signature path
   const signaturePath = useMemo(() => {
-    if (!name) return "";
+    if (!name) return ""; // Use name directly for immediate signature generation
 
     const points = [];
     const currentLayout = getKeyboardLayout(
@@ -94,12 +141,9 @@ export const KeyboardSignature = () => {
     }
 
     if (points.length === 0) return "";
-
-    // SVG path
     return generatePath(points, curveType);
-  }, [name, currentKeyboardLayout, curveType, includeNumbers]);
+  }, [name, currentKeyboardLayout, curveType, includeNumbers]); // Use name directly
 
-  // Get active keys for highlighting
   const activeKeys = useMemo(() => {
     const currentLayout = getKeyboardLayout(
       currentKeyboardLayout,
@@ -111,7 +155,94 @@ export const KeyboardSignature = () => {
         .split("")
         .filter((char) => char in currentLayout),
     );
-  }, [name, currentKeyboardLayout, includeNumbers]);
+  }, [name, currentKeyboardLayout, includeNumbers]); // Use name directly
+
+  const handleLogin = async () => {
+    await signInWithTwitter();
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    setDropdownOpen(false);
+  };
+
+  const handleClaim = async () => {
+    if (!user || !name || !signaturePath) {
+      return;
+    }
+
+    // Check if already claimed using React Query data
+    if (existingSignature) {
+      setClaimedBy(existingSignature.claimed_by_username);
+      setClaimError(
+        `Signature already claimed by @${existingSignature.claimed_by_username}`,
+      );
+      return;
+    }
+
+    setClaimError(null);
+
+    // Use React Query mutation to claim the signature
+    claimSignatureMutation.mutate(
+      {
+        name,
+        signaturePath,
+        strokeConfig,
+        includeNumbers,
+      },
+      {
+        onSuccess: (result) => {
+          if (result.success) {
+            setClaimedBy(user.username);
+            setShowClaimPopup(true); // Show success popup
+          } else if (result.error === "signature_already_claimed") {
+            setClaimError("Signature already claimed");
+          } else if (result.error === "user_already_claimed") {
+            setClaimError(
+              "You already claimed a signature. Only 1 signature per account.",
+            );
+          } else {
+            setClaimError("Failed to claim signature. Please try again.");
+          }
+        },
+        onError: () => {
+          setClaimError("Failed to claim signature. Please try again.");
+        },
+      },
+    );
+  };
+
+  const handleUnclaim = async () => {
+    if (!user || !existingSignature?.claimed_by_username) {
+      return;
+    }
+
+    setClaimError(null);
+
+    // Use React Query mutation to claim the signature
+    unclaimSignatureMutation.mutate(
+      {
+        name,
+        username: existingSignature.claimed_by_username,
+      },
+      {
+        onSuccess: (result) => {
+          if (result.success) {
+            setClaimedBy(null);
+          } else {
+            setClaimError("Failed to unclaim signature. Please try again.");
+          }
+        },
+        onError: () => {
+          setClaimError("Failed to unclaim signature. Please try again.");
+        },
+      },
+    );
+  };
+
+  const handleTwitterRedirect = (username: string) => {
+    window.open(`https://twitter.com/${username}`, "_blank");
+  };
 
   // Generate path segments for caps highlight
   const pathSegments = useMemo(() => {
@@ -209,7 +340,7 @@ export const KeyboardSignature = () => {
            <stop offset="0%" style="stop-color:${strokeConfig.gradientStart};stop-opacity:1" />
            <stop offset="100%" style="stop-color:${strokeConfig.gradientEnd};stop-opacity:1" />
          </linearGradient>`
-      : '';
+        : "";
     const strokeColor =
       strokeConfig.style === StrokeStyle.SOLID
         ? strokeConfig.color
@@ -286,22 +417,272 @@ export const KeyboardSignature = () => {
     });
   };
 
+  if (showClaimedPage) {
+    return <ClaimedPage onBack={() => setShowClaimedPage(false)} user={user} />;
+  }
+
   return (
-    <div
-      className={`flex flex-col sm:items-center sm:justify-center max-sm:mx-auto max-sm:w-[28rem] sm:w-fit`}
-    >
-      <a
-        className="absolute cursor-pointer left-1/2 bottom-8 -translate-x-1/2 opacity-50 hover:opacity-100 text-sm flex flex-col items-center transition-all duration-150 ease-out text-center"
-        href="https://axiom.trade/meme/3URGpspzJUT7d3LN1kfbjm6koy5fNQTgQqDY8Zh1rZ8H"
-        rel="noreferrer noopener"
-        target="_blank"
-      >
-        <p className="font-bold text-white text-base">$SIGN</p>
-        <p className=" text-neutral-300 max-sm:break-all">
-          <span className="text-neutral-400 font-bold">CA:</span>{" "}
-          GjbLHUmyUo6JFczvaTbsj9p1LjsXmvR8Vk9gRPNLBAGS
-        </p>
-      </a>
+    <div className="flex flex-col sm:items-center sm:justify-center max-sm:mx-auto max-sm:w-[28rem] sm:w-fit">
+      <div className="absolute top-6 left-1/2 -translate-x-1/2">
+        <div className="inline-flex items-center gap-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg px-4 py-2">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="text-yellow-400"
+          >
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <path d="M12 9v4" />
+            <path d="m12 17.02.01-.02" />
+          </svg>
+          <p className="text-sm text-yellow-200 font-medium text-center">
+            You can only claim 1 signature per account
+          </p>
+        </div>
+      </div>
+
+      <div className="absolute top-6 left-6 z-20">
+        <div className="relative">
+          <motion.div
+            animate={{
+              width: showSearchInput ? 200 : 36,
+              transition: { duration: 0.3, ease: [0.6, 1, 0.26, 1] },
+            }}
+            className="flex items-center bg-neutral-900/50 border border-neutral-700/50 rounded-lg overflow-hidden"
+          >
+            <button
+              onClick={() => setShowSearchInput(true)}
+              className="p-2 text-neutral-400 hover:text-white transition-colors duration-150 flex-shrink-0 flex items-center justify-center"
+              title="Search claimed signatures"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+            </button>
+
+            <AnimatePresence>
+              {showSearchInput && (
+                <motion.input
+                  ref={searchInputRef}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2, delay: 0.1 }}
+                  autoFocus
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onBlur={(e) => {
+                    // Don't close if clicking on a result
+                    if (!e.relatedTarget?.closest(".search-results")) {
+                      setTimeout(() => {
+                        if (!searchQuery) {
+                          setShowSearchInput(false);
+                        }
+                      }, 150);
+                    }
+                  }}
+                  placeholder="Search signatures..."
+                  className="bg-transparent text-white placeholder-neutral-500 px-0 py-2 text-sm outline-none flex-1 min-w-0"
+                />
+              )}
+            </AnimatePresence>
+
+            {searchQuery && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSearchQuery("");
+                  setShowSearchInput(false);
+                }}
+                className="p-1 mr-2 text-neutral-400 hover:text-white transition-colors flex-shrink-0"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                </svg>
+              </motion.button>
+            )}
+          </motion.div>
+
+          <AnimatePresence>
+            {(searchResults.length > 0 || searchQuery.trim()) &&
+              showSearchInput && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="search-results absolute top-full left-0 mt-2 w-80 max-w-[90vw] sm:w-96 z-30"
+                >
+                  {searchQuery.trim() &&
+                    searchQuery !== debouncedSearchQuery && (
+                      <div className="px-4 py-3 text-center text-neutral-400 text-sm">
+                        Searching...
+                      </div>
+                    )}
+                  {searchResults.length > 0 ? (
+                    <div className="py-2">
+                      {searchResults.map((signature: ClaimedSignature) => (
+                        <div
+                          key={signature.id}
+                          onClick={() => {
+                            setSelectedSignature(signature);
+                            setShowSearchInput(false);
+                            setSearchQuery("");
+                          }}
+                          className="px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700/50 rounded-lg mb-2 hover:bg-neutral-800/90 cursor-pointer transition-colors duration-150"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="bg-black rounded p-2 w-12 h-6 flex items-center justify-center flex-shrink-0">
+                              <svg
+                                width="48"
+                                height="20"
+                                viewBox="0 0 600 200"
+                                className="w-full h-full"
+                              >
+                                <defs>
+                                  {signature.stroke_config.style ===
+                                    "gradient" && (
+                                    <linearGradient
+                                      id={`search-gradient-${signature.id}`}
+                                      x1="0%"
+                                      y1="0%"
+                                      x2="100%"
+                                      y2="0%"
+                                    >
+                                      <stop
+                                        offset="0%"
+                                        stopColor={
+                                          signature.stroke_config.gradientStart
+                                        }
+                                        stopOpacity={1}
+                                      />
+                                      <stop
+                                        offset="100%"
+                                        stopColor={
+                                          signature.stroke_config.gradientEnd
+                                        }
+                                        stopOpacity={1}
+                                      />
+                                    </linearGradient>
+                                  )}
+                                </defs>
+                                <path
+                                  d={signature.signature_path}
+                                  stroke={
+                                    signature.stroke_config.style === "solid"
+                                      ? signature.stroke_config.color
+                                      : `url(#search-gradient-${signature.id})`
+                                  }
+                                  strokeWidth={signature.stroke_config.width}
+                                  fill="none"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-white text-sm truncate">
+                                {signature.name}
+                              </h3>
+                              <p className="text-xs text-neutral-400 truncate">
+                                @{signature.claimed_by_username}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : searchQuery.trim() ? (
+                    <div className="px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700/50 rounded-lg text-center">
+                      <p className="text-neutral-400 text-sm">
+                        No signatures found for &quot;{searchQuery}&quot;
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700/50 rounded-lg text-center">
+                      <p className="text-neutral-400 text-sm">
+                        Start typing to search signatures...
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <div className="absolute top-6 right-6 z-20">
+        {!user ? (
+          <button
+            onClick={handleLogin}
+            className="whitespace-nowrap text-white flex flex-row items-center gap-2 font-semibold cursor-pointer hover:bg-neutral-950 rounded-full bg-black border border-neutral-800/75 px-4 py-2 opacity-75 hover:opacity-100 duration-150 ease-out transition-opacity"
+          >
+            <XIcon width={20} height={20} className="fill-white" />
+            Connect with X
+          </button>
+        ) : (
+          <div className="relative">
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="whitespace-nowrap text-white flex flex-row items-center gap-2 font-semibold cursor-pointer hover:bg-neutral-950 rounded-full bg-black border border-neutral-800/75 p-2 pr-4 opacity-75 hover:opacity-100 duration-150 ease-out transition-opacity"
+            >
+              <img
+                src={user.profilePic}
+                alt={`${user.username} profile picture`}
+                className="size-7 rounded-full"
+              />
+
+              {user.username}
+            </button>
+
+            <AnimatePresence>
+              {dropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: [0.26, 1, 0.6, 1] }}
+                  className="absolute right-0  gap-1 top-full mt-2 bg-neutral-950 border border-neutral-800 rounded-lg p-2 min-w-[120px]"
+                >
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      setShowClaimedPage(true);
+                    }}
+                    className="whitespace-nowrap cursor-pointer block w-full text-left px-3 py-2 text-sm text-neutral-300 hover:text-white hover:bg-neutral-800/50 rounded-lg transition-all duration-150 hover:duration-50"
+                  >
+                    Claimed
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="text-red-400 cursor-pointer block w-full text-left px-3 py-2 text-sm hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all duration-150 hover:duration-50"
+                  >
+                    Logout
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
 
       <input
         autoFocus
@@ -309,11 +690,10 @@ export const KeyboardSignature = () => {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Enter your name"
-        className="placeholder-neutral-800 leading-[1] [&::placeholder]:duration-200 [&::placeholder]:transition-all focus:placeholder-neutral-600 tracking-wide text-4xl text-white bg-transparent duration-150 transition-all ease-out px-4 py-2 text-center outline-none"
+        className="max-sm:mt-14 placeholder-neutral-800 leading-[1] [&::placeholder]:duration-200 [&::placeholder]:transition-all focus:placeholder-neutral-600 tracking-wide text-4xl text-white bg-transparent duration-150 transition-all ease-out px-4 py-2 text-center outline-none"
       />
 
       <div className="relative mb-4 mt-8 max-sm:mt-0 max-sm:scale-70 max-sm:-ml-22">
-        {/* Keyboard */}
         <div
           className={`relative transition-opacity ease-out ${name.length === 0
             ? "opacity-100"
@@ -351,14 +731,12 @@ export const KeyboardSignature = () => {
           })}
         </div>
 
-        {/* Signature */}
         <svg
           className="pointer-events-none absolute top-0 left-0"
           width="650"
           height={includeNumbers ? "260" : "200"}
           style={{ zIndex: 10 }}
         >
-          {/* defs for defining the SVG gradients */}
           <defs>
             {strokeConfig.style === StrokeStyle.GRADIENT && (
               <linearGradient
@@ -371,6 +749,16 @@ export const KeyboardSignature = () => {
               >
                 <stop offset="0%" stopColor={strokeConfig.gradientStart} stopOpacity={1} />
                 <stop offset="100%" stopColor={strokeConfig.gradientEnd} stopOpacity={1} />
+                <stop
+                  offset="0%"
+                  stopColor={strokeConfig.gradientStart}
+                  stopOpacity={1}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={strokeConfig.gradientEnd}
+                  stopOpacity={1}
+                />
               </linearGradient>
             )}
           </defs>
@@ -402,7 +790,45 @@ export const KeyboardSignature = () => {
       <div
         className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${name.length > 1 ? "opacity-100 translate-y-0 duration-1000" : "pointer-events-none opacity-0 translate-y-2 duration-150"}`}
       >
-        <div className="grid grid-cols-2 gap-2">
+        {existingSignature?.claimed_by_username === claimedBy ? (
+          <button
+            onClick={handleUnclaim}
+            className="flex items-center justify-center gap-1 font-medium text-red-500 border border-red-700/50 px-3.5 py-1.5 bg-red-900/25 text-sm rounded-md hover:bg-red-900/30 cursor-pointer transition-all duration-100 ease-out hover:text-red-400"
+          >
+            Unclaim
+          </button>
+        ) : claimedBy ? (
+          <div className="flex items-center justify-center gap-1 font-medium text-neutral-500 border border-neutral-700/50 px-3.5 py-1.5 bg-neutral-900/50 text-sm rounded-md">
+            <span>Claimed by</span>
+            <button
+              onClick={() => handleTwitterRedirect(claimedBy)}
+              className="text-blue-400 hover:text-blue-300 transition-colors duration-100 cursor-pointer"
+            >
+              @{claimedBy}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleClaim}
+            disabled={!user || !name || !!claimedBy}
+            className={`font-medium px-3.5 py-1.5 text-sm rounded-md text-center active:scale-98 transition-all duration-100 ease-out ${
+              !user || !name || !!claimedBy
+                ? "text-neutral-600 border border-neutral-800/50 bg-neutral-900/30 cursor-not-allowed"
+                : "text-neutral-500 border border-neutral-700/50 bg-neutral-900/50 active:brightness-70 hover:brightness-85 cursor-pointer"
+            }`}
+          >
+            {!user
+              ? "Login to Claim"
+              : !name
+                ? "Enter Name"
+                : claimedBy
+                  ? "Already Claimed"
+                  : "Claim Signature"}
+          </button>
+        )}
+
+        <div className="grid grid-cols-2 gap-2 mt-4">
           <button
             type="button"
             onClick={exportSVG}
@@ -429,6 +855,19 @@ export const KeyboardSignature = () => {
           View on GitHub
         </a>
       </div>
+
+      <a
+        className="absolute cursor-pointer left-1/2 bottom-8 -translate-x-1/2 opacity-50 hover:opacity-100 text-sm flex flex-col items-center transition-all duration-150 ease-out text-center"
+        href="https://axiom.trade/meme/3URGpspzJUT7d3LN1kfbjm6koy5fNQTgQqDY8Zh1rZ8H"
+        rel="noreferrer noopener"
+        target="_blank"
+      >
+        <p className="font-bold text-white text-base">$SIGN</p>
+        <p className=" text-neutral-300 max-sm:break-all">
+          <span className="text-neutral-400 font-bold">CA:</span>{" "}
+          GjbLHUmyUo6JFczvaTbsj9p1LjsXmvR8Vk9gRPNLBAGS
+        </p>
+      </a>
 
       <AnimatePresence>
         {optionsOpen ? (
@@ -553,11 +992,14 @@ export const KeyboardSignature = () => {
                 {Object.values(StrokeStyle).map((style) => (
                   <button
                     key={style}
-                    onClick={() => setStrokeConfig(prev => ({ ...prev, style }))}
-                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${strokeConfig.style === style
-                      ? "bg-white text-black font-medium border-white"
-                      : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
-                      }`}
+                    onClick={() =>
+                      setStrokeConfig((prev) => ({ ...prev, style }))
+                    }
+                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${
+                      strokeConfig.style === style
+                        ? "bg-white text-black font-medium border-white"
+                        : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
+                    }`}
                   >
                     {style}
                   </button>
@@ -572,7 +1014,9 @@ export const KeyboardSignature = () => {
                   </p>
                   <ColorPicker
                     value={strokeConfig.color}
-                    onChange={(color) => setStrokeConfig(prev => ({ ...prev, color }))}
+                    onChange={(color) =>
+                      setStrokeConfig((prev) => ({ ...prev, color }))
+                    }
                   />
                 </>
               )}
@@ -586,11 +1030,21 @@ export const KeyboardSignature = () => {
                   <div className="flex items-center gap-2">
                     <ColorPicker
                       value={strokeConfig.gradientStart}
-                      onChange={(color) => setStrokeConfig(prev => ({ ...prev, gradientStart: color }))}
+                      onChange={(color) =>
+                        setStrokeConfig((prev) => ({
+                          ...prev,
+                          gradientStart: color,
+                        }))
+                      }
                     />
                     <ColorPicker
                       value={strokeConfig.gradientEnd}
-                      onChange={(color) => setStrokeConfig(prev => ({ ...prev, gradientEnd: color }))}
+                      onChange={(color) =>
+                        setStrokeConfig((prev) => ({
+                          ...prev,
+                          gradientEnd: color,
+                        }))
+                      }
                     />
                   </div>
                 </>
@@ -606,10 +1060,17 @@ export const KeyboardSignature = () => {
                   min="1"
                   max="8"
                   value={strokeConfig.width}
-                  onChange={(e) => setStrokeConfig(prev => ({ ...prev, width: parseInt(e.target.value) }))}
+                  onChange={(e) =>
+                    setStrokeConfig((prev) => ({
+                      ...prev,
+                      width: parseInt(e.target.value),
+                    }))
+                  }
                   className="flex-1"
                 />
-                <span className="text-neutral-400 text-xs w-6">{strokeConfig.width}px</span>
+                <span className="text-neutral-400 text-xs w-6">
+                  {strokeConfig.width}px
+                </span>
               </div>
             </div>
 
@@ -637,6 +1098,26 @@ export const KeyboardSignature = () => {
           </motion.button>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showClaimPopup && (
+          <ClaimPopup
+            isOpen={showClaimPopup}
+            onClose={() => setShowClaimPopup(false)}
+            name={name}
+            signaturePath={signaturePath}
+            strokeConfig={strokeConfig}
+            includeNumbers={includeNumbers}
+            user={user}
+          />
+        )}
+      </AnimatePresence>
+
+      <SignatureDetailModal
+        signature={selectedSignature}
+        isOpen={!!selectedSignature}
+        onClose={() => setSelectedSignature(null)}
+      />
     </div>
   );
 };
