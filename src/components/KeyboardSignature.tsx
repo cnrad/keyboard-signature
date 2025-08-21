@@ -23,6 +23,14 @@ import {
 import { useDebounce } from "@/hooks/useDebounce";
 import { XIcon } from "./XIcon";
 
+const DEFAULT_STROKE_CONFIG = {
+  style: StrokeStyle.SOLID,
+  color: "#ffffff",
+  gradientStart: "#ff6b6b",
+  gradientEnd: "#4ecdc4",
+  width: 3,
+};
+
 export const KeyboardSignature = () => {
   const [name, setName] = useState("");
   const [currentKeyboardLayout, setCurrentKeyboardLayout] =
@@ -52,13 +60,9 @@ export const KeyboardSignature = () => {
   const unclaimSignatureMutation = useUnclaimSignature();
   const { data: existingSignature } = useSignatureByName(debouncedName); // API call debounced
   const { searchResults } = useSearchSignatures(debouncedSearchQuery); // Search API debounced
-  const [strokeConfig, setStrokeConfig] = useState<StrokeConfig>({
-    style: StrokeStyle.SOLID,
-    color: "#ffffff",
-    gradientStart: "#ff6b6b",
-    gradientEnd: "#4ecdc4",
-    width: 3,
-  });
+  const [strokeConfig, setStrokeConfig] = useState<StrokeConfig>(
+    DEFAULT_STROKE_CONFIG,
+  );
 
   const inputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -75,6 +79,12 @@ export const KeyboardSignature = () => {
       width: 3,
     });
   };
+
+  useEffect(() => {
+    // Match the existing signature
+    if (existingSignature) setStrokeConfig(existingSignature?.stroke_config);
+  }, [existingSignature]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMainInputFocused = document.activeElement === inputRef.current;
@@ -111,6 +121,11 @@ export const KeyboardSignature = () => {
   }, [debouncedName, existingSignature]);
 
   useEffect(() => {
+    // Assume reset if input is cleared
+    if (name.length === 0) {
+      setStrokeConfig(DEFAULT_STROKE_CONFIG);
+    }
+
     if (name.length > 1) {
       setKeyboardVisible(true);
       const timer = setTimeout(() => setKeyboardVisible(false), 100);
@@ -324,26 +339,34 @@ export const KeyboardSignature = () => {
 
   return (
     <div className="flex flex-col sm:items-center sm:justify-center max-sm:mx-auto max-sm:w-[28rem] sm:w-fit">
-      <div className="absolute top-6 left-1/2 -translate-x-1/2">
-        <div className="inline-flex items-center gap-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg px-4 py-2">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-yellow-400"
-          >
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-            <path d="M12 9v4" />
-            <path d="m12 17.02.01-.02" />
-          </svg>
-          <p className="text-sm text-yellow-200 font-medium text-center">
-            You can only claim 1 signature per account
-          </p>
-        </div>
-      </div>
+      {user ? (
+        <motion.div
+          initial={{ y: -4, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -4, opacity: 0 }}
+          transition={{ duration: 1, ease: [0.26, 1, 0.6, 1] }}
+          className="absolute top-6 left-1/2 -translate-x-1/2"
+        >
+          <div className="inline-flex items-center gap-2 bg-yellow-900/20 border border-yellow-700/30 rounded-lg px-4 py-2">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="text-yellow-400"
+            >
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+              <path d="M12 9v4" />
+              <path d="m12 17.02.01-.02" />
+            </svg>
+            <p className="text-sm text-yellow-200 font-medium text-center">
+              You can only claim 1 signature per account
+            </p>
+          </div>
+        </motion.div>
+      ) : null}
 
       <div className="absolute top-6 left-6 z-20">
         <div className="relative">
