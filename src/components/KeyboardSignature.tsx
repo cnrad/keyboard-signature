@@ -683,7 +683,8 @@ export const KeyboardSignature = () => {
       <div
         className={`max-sm:w-[20rem] max-sm:mx-auto flex flex-col gap-2 sm:mt-8 transition-all ease-in-out ${name.length > 1 ? "opacity-100 translate-y-0 duration-1000" : "pointer-events-none opacity-0 translate-y-2 duration-150"}`}
       >
-        {existingSignature?.claimed_by_username === user?.username ? (
+        {existingSignature?.claimed_by_username &&
+        existingSignature?.claimed_by_username === user?.username ? (
           <button
             onClick={handleUnclaim}
             className="flex items-center justify-center gap-1 font-medium text-red-500 border border-red-700/50 px-3.5 py-1.5 bg-red-900/25 text-sm rounded-md hover:bg-red-900/30 cursor-pointer transition-all duration-100 ease-out hover:text-red-400"
