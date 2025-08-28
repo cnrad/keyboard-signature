@@ -8,6 +8,8 @@ export enum KeyboardLayout {
   DVORAK = "dvorak",
   AZERTY = "azerty",
   ABCDEF = "abcdef",
+  TURKISH_Q = "turkish_q",
+  TURKISH_F = "turkish_f",
 }
 
 export const numberRow: Record<string, Key> = {
@@ -179,11 +181,95 @@ export const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
     Y: { x: 6.25, y: 2 },
     Z: { x: 7.25, y: 2 },
   },
+  [KeyboardLayout.TURKISH_Q]: {
+    Q: { x: 0.5, y: 0 },
+    W: { x: 1.5, y: 0 },
+    E: { x: 2.5, y: 0 },
+    R: { x: 3.5, y: 0 },
+    T: { x: 4.5, y: 0 },
+    Y: { x: 5.5, y: 0 },
+    U: { x: 6.5, y: 0 },
+    I: { x: 7.5, y: 0 },
+    O: { x: 8.5, y: 0 },
+    P: { x: 9.5, y: 0 },
+    Ğ: { x: 10.5, y: 0 },
+    Ü: { x: 11.5, y: 0 },
+
+    A: { x: 0.75, y: 1 },
+    S: { x: 1.75, y: 1 },
+    D: { x: 2.75, y: 1 },
+    F: { x: 3.75, y: 1 },
+    G: { x: 4.75, y: 1 },
+    H: { x: 5.75, y: 1 },
+    J: { x: 6.75, y: 1 },
+    K: { x: 7.75, y: 1 },
+    L: { x: 8.75, y: 1 },
+    Ş: { x: 9.75, y: 1 },
+    İ: { x: 10.75, y: 1 },
+
+    Z: { x: 1.25, y: 2 },
+    X: { x: 2.25, y: 2 },
+    C: { x: 3.25, y: 2 },
+    V: { x: 4.25, y: 2 },
+    B: { x: 5.25, y: 2 },
+    N: { x: 6.25, y: 2 },
+    M: { x: 7.25, y: 2 },
+    Ö: { x: 8.25, y: 2 },
+    Ç: { x: 9.25, y: 2 },
+  },
+  [KeyboardLayout.TURKISH_F]: {
+    F: { x: 0.5, y: 0 },
+    G: { x: 1.5, y: 0 },
+    Ğ: { x: 2.5, y: 0 },
+    I: { x: 3.5, y: 0 },
+    O: { x: 4.5, y: 0 },
+    D: { x: 5.5, y: 0 },
+    R: { x: 6.5, y: 0 },
+    N: { x: 7.5, y: 0 },
+    H: { x: 8.5, y: 0 },
+    P: { x: 9.5, y: 0 },
+    Q: { x: 10.5, y: 0 },
+    W: { x: 11.5, y: 0 },
+
+    U: { x: 0.75, y: 1 },
+    İ: { x: 1.75, y: 1 },
+    E: { x: 2.75, y: 1 },
+    A: { x: 3.75, y: 1 },
+    Ü: { x: 4.75, y: 1 },
+    T: { x: 5.75, y: 1 },
+    K: { x: 6.75, y: 1 },
+    M: { x: 7.75, y: 1 },
+    L: { x: 8.75, y: 1 },
+    Y: { x: 9.75, y: 1 },
+    Ş: { x: 10.75, y: 1 },
+    X: { x: 11.75, y: 1 },
+
+    J: { x: 1.25, y: 2 },
+    Ö: { x: 2.25, y: 2 },
+    V: { x: 3.25, y: 2 },
+    C: { x: 4.25, y: 2 },
+    Ç: { x: 5.25, y: 2 },
+    Z: { x: 6.25, y: 2 },
+    S: { x: 7.25, y: 2 },
+    B: { x: 8.25, y: 2 },
+  },
 } as const;
 
 export const getKeyboardLayout = (layout: KeyboardLayout, includeNumbers: boolean): Record<string, Key> => {
   const baseLayout = keyboardLayouts[layout];
   return includeNumbers ? { ...numberRow, ...baseLayout } : baseLayout;
+};
+
+export const getKeyboardLayoutWidth = (layout: KeyboardLayout): number => {
+  // Calculate the maximum x coordinate for the layout
+  const keys = keyboardLayouts[layout];
+  const maxX = Math.max(...Object.values(keys).map(key => key.x));
+  
+  // Standard width is 650px, but for wider layouts we need to accommodate all keys
+  // Each key position is 60px wide, plus margins
+  const requiredWidth = Math.max(650, (maxX + 1.5) * 60 + 56); // 56px for margins (28px on each side)
+  
+  return requiredWidth;
 };
 
 export type CurveType =
