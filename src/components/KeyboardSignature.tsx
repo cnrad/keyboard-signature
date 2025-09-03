@@ -260,10 +260,9 @@ export const KeyboardSignature = () => {
   const exportSVG = () => {
     if (!signaturePath || !name) return;
 
-    const height = includeNumbers ? 260 : 200;
-    const gradients =
-      strokeConfig.style === StrokeStyle.GRADIENT
-        ? `<linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    const height = includeNumbers || currentKeyboardLayout === KeyboardLayout.KAZAKH ? 260 : 200;
+    const gradients = strokeConfig.style === StrokeStyle.GRADIENT
+      ? `<linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
            <stop offset="0%" style="stop-color:${strokeConfig.gradientStart};stop-opacity:1" />
            <stop offset="100%" style="stop-color:${strokeConfig.gradientEnd};stop-opacity:1" />
          </linearGradient>`
@@ -290,7 +289,7 @@ export const KeyboardSignature = () => {
   const exportPNG = () => {
     if (!signaturePath || !name) return;
 
-    const height = includeNumbers ? 260 : 200;
+    const height = includeNumbers || currentKeyboardLayout === KeyboardLayout.KAZAKH ? 260 : 200;
     const canvas = document.createElement("canvas");
     canvas.width = 1300;
     canvas.height = height * 2;
@@ -639,13 +638,12 @@ export const KeyboardSignature = () => {
               <div
                 key={char}
                 onClick={() => setName((p) => p + char)}
-                className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${
-                  isCurrentKey
-                    ? "bg-white/50 border-neutral-400 text-black scale-110"
-                    : isActive
-                      ? "bg-neutral-900 border-neutral-800 text-white"
-                      : "bg-transparent border-neutral-800/50 text-neutral-300"
-                }`}
+                className={`absolute w-14 h-12 rounded-lg border flex items-center justify-center text-sm font-mono transition-[transform,color,background-color,border-color] duration-200 active:scale-95 ${isCurrentKey
+                  ? "bg-white/50 border-neutral-400 text-black scale-110"
+                  : isActive
+                    ? "bg-neutral-900 border-neutral-800 text-white"
+                    : "bg-transparent border-neutral-800/50 text-neutral-300"
+                  }`}
                 style={{
                   left: `${pos.x * 60}px`,
                   top: `${pos.y * 60 + (includeNumbers ? 75 : 15)}px`,
@@ -660,7 +658,7 @@ export const KeyboardSignature = () => {
         <svg
           className="pointer-events-none absolute top-0 left-0"
           width="650"
-          height={includeNumbers ? "260" : "200"}
+          height={includeNumbers || currentKeyboardLayout === KeyboardLayout.KAZAKH ? "260" : "200"}
           style={{ zIndex: 10 }}
         >
           <defs>
@@ -851,11 +849,10 @@ export const KeyboardSignature = () => {
                   <button
                     key={type}
                     onClick={() => setCurveType(type)}
-                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${
-                      curveType === type
-                        ? "bg-white text-black font-medium border-white"
-                        : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
-                    }`}
+                    className={`px-3 py-1 text-xs rounded-full transition-all duration-150 ease-out cursor-pointer border ${curveType === type
+                      ? "bg-white text-black font-medium border-white"
+                      : "bg-neutral-900/50 text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border-neutral-800"
+                      }`}
                   >
                     {type.replace("-", " ")}
                   </button>
