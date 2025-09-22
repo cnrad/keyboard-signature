@@ -1,17 +1,39 @@
 @import "tailwindcss";
 
 @theme inline {
-    --font-sans: var(--font-open-sans);
-    --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-open-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 body {
-    background: #000;
-    color: #fff;
-    font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100dvh;
-    width: 100dvw;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.solid-path {
+  stroke-dasharray: var(--path-length);
+  stroke-dashoffset: var(--path-length);
+  animation: dash 4s ease-out infinite;
+}
+
+@keyframes dash {
+  0% {
+    stroke-dashoffset: var(--path-length);
+    opacity: 0;
+  }
+  70% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  90% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  95% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: var(--path-length);
+    opacity: 0;
+  }
 }

@@ -189,21 +189,28 @@ export const getKeyboardLayout = (layout: KeyboardLayout, includeNumbers: boolea
 export type CurveType =
   | "linear"
   | "catmull-rom"
-  | "quadratic-bezier"
   | "cubic-bezier"
   | "simple-curve";
 
-export enum StrokeStyle {
+export enum ColorType {
   SOLID = "solid",
   GRADIENT = "gradient",
 }
 
+export enum StrokeType {
+  SOLID = "solid",
+  DASHED = "dashed",
+  DOTTED = "dotted"
+}
+
 export type StrokeConfig = {
-  style: StrokeStyle;
+  style: ColorType;
+  stroke: StrokeType;
   color: string;
   gradientStart: string;
   gradientEnd: string;
   width: number;
+  glow: boolean;
 };
 
 export const generateLinearPath = (
@@ -241,29 +248,6 @@ export const generateCatmullRomPath = (
     const cp2y = p2.y - ((p3.y - p1.y) * tension) / 6;
 
     path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
-  }
-
-  return path;
-};
-
-export const generateQuadraticBezierPath = (
-  points: { x: number; y: number }[],
-): string => {
-  if (points.length < 2) return "";
-  if (points.length === 2)
-    return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
-
-  let path = `M ${points[0].x} ${points[0].y}`;
-
-  for (let i = 0; i < points.length - 1; i++) {
-    const current = points[i];
-    const next = points[i + 1];
-
-    // Control point is midway between current and next, offset perpendicular
-    const midX = (current.x + next.x) / 2;
-    const midY = (current.y + next.y) / 2;
-
-    path += ` Q ${midX} ${midY} ${next.x} ${next.y}`;
   }
 
   return path;
@@ -329,8 +313,6 @@ export const generatePath = (
       return generateLinearPath(points);
     case "catmull-rom":
       return generateCatmullRomPath(points);
-    case "quadratic-bezier":
-      return generateQuadraticBezierPath(points);
     case "cubic-bezier":
       return generateCubicBezierPath(points);
     case "simple-curve":
@@ -342,7 +324,7 @@ export const generatePath = (
 
 // Generate SVG gradient definitions
 export const generateSVGGradients = (strokeConfig: StrokeConfig): string => {
-  if (strokeConfig.style === StrokeStyle.GRADIENT) {
+  if (strokeConfig.style === StrokeType.GRADIENT) {
     return `
       <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
         <stop offset="0%" style="stop-color:${strokeConfig.gradientStart};stop-opacity:1" />

@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { StrokeStyle, StrokeConfig } from "@/util/constants";
+import { StrokeConfig, ColorType } from "@/util/constants";
 import { handleTweet } from "@/lib/tweet";
 import { XIcon } from "./XIcon";
 
@@ -40,9 +40,9 @@ export const ClaimPopup = ({
     ctx.lineJoin = "round";
 
     // Set stroke style
-    if (strokeConfig.style === StrokeStyle.SOLID) {
+    if (strokeConfig.style === ColorType.SOLID) {
       ctx.strokeStyle = strokeConfig.color;
-    } else if (strokeConfig.style === StrokeStyle.GRADIENT) {
+    } else if (strokeConfig.style === ColorType.GRADIENT) {
       const gradient = ctx.createLinearGradient(0, 0, 650, 0);
       gradient.addColorStop(0, strokeConfig.gradientStart);
       gradient.addColorStop(1, strokeConfig.gradientEnd);
@@ -122,7 +122,7 @@ export const ClaimPopup = ({
             style={{ maxWidth: "400px", margin: "0 auto", display: "block" }}
           >
             <defs>
-              {strokeConfig.style === StrokeStyle.GRADIENT && (
+              {strokeConfig.style === ColorType.GRADIENT && (
                 <linearGradient
                   id="popupGradient"
                   x1="0%"
@@ -147,7 +147,7 @@ export const ClaimPopup = ({
             <path
               d={signaturePath}
               stroke={
-                strokeConfig.style === StrokeStyle.SOLID
+                strokeConfig.style === ColorType.SOLID
                   ? strokeConfig.color
                   : "url(#popupGradient)"
               }
