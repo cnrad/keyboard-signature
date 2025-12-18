@@ -8,6 +8,7 @@ export enum KeyboardLayout {
   DVORAK = "dvorak",
   AZERTY = "azerty",
   ABCDEF = "abcdef",
+  QWERTZ = "qwertz",
 }
 
 export const numberRow: Record<string, Key> = {
@@ -178,6 +179,37 @@ export const keyboardLayouts: Record<KeyboardLayout, Record<string, Key>> = {
     X: { x: 5.25, y: 2 },
     Y: { x: 6.25, y: 2 },
     Z: { x: 7.25, y: 2 },
+  },
+
+  [KeyboardLayout.QWERTZ]: {
+    Q: { x: 0.5, y: 0 },
+    W: { x: 1.5, y: 0 },
+    E: { x: 2.5, y: 0 },
+    R: { x: 3.5, y: 0 },
+    T: { x: 4.5, y: 0 },
+    Z: { x: 5.5, y: 0 },
+    U: { x: 6.5, y: 0 },
+    I: { x: 7.5, y: 0 },
+    O: { x: 8.5, y: 0 },
+    P: { x: 9.5, y: 0 },
+
+    A: { x: 0.75, y: 1 },
+    S: { x: 1.75, y: 1 },
+    D: { x: 2.75, y: 1 },
+    F: { x: 3.75, y: 1 },
+    G: { x: 4.75, y: 1 },
+    H: { x: 5.75, y: 1 },
+    J: { x: 6.75, y: 1 },
+    K: { x: 7.75, y: 1 },
+    L: { x: 8.75, y: 1 },
+
+    Y: { x: 1.25, y: 2 },
+    X: { x: 2.25, y: 2 },
+    C: { x: 3.25, y: 2 },
+    V: { x: 4.25, y: 2 },
+    B: { x: 5.25, y: 2 },
+    N: { x: 6.25, y: 2 },
+    M: { x: 7.25, y: 2 },
   },
 } as const;
 
