@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "next build && bunx @cside.dev/cli@latest signature.cnrad.dev",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@cside.dev/cli": "^0.0.24",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.55.0",
     "@tanstack/react-query": "^5.85.3",

@@ -4,6 +4,7 @@
     "": {
       "name": "keyboard-signature",
       "dependencies": {
+        "@cside.dev/cli": "^0.0.24",
         "@supabase/ssr": "^0.6.1",
         "@supabase/supabase-js": "^2.55.0",
         "@tanstack/react-query": "^5.85.3",
@@ -29,6 +30,8 @@
   },
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
+
+    "@cside.dev/cli": ["@cside.dev/cli@0.0.24", "", { "bin": { "cli": "dist/index.js" } }, "sha512-LURIeI0NxEGoTWK3iSP0wZ2NcbYXyoKLoS8uFry/POeN/XXm78VekYEL9I0xcrAEXxtNNmoYnDEk26/WyHou/Q=="],
 
     "@emnapi/core": ["@emnapi/core@1.4.5", "", { "dependencies": { "@emnapi/wasi-threads": "1.0.4", "tslib": "^2.4.0" } }, "sha512-XsLw1dEOpkSX/WucdqUhPWP7hDxSvZiY+fsUC14h+FtQ2Ifni4znbBt8punRX+Uj2JG/uDb8nEHVKvrVlvdZ5Q=="],
 
